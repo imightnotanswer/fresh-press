@@ -37,11 +37,26 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Email required" }, { status: 400 });
         }
 
-        // Find user by email
+        // Find user by email using the correct Supabase admin API
+        const { data: authUser, error: authError } = await supabase.auth.admin.listUsers({
+            page: 1,
+            perPage: 1000
+        });
+
+        if (authError) {
+            return NextResponse.json({ error: "Failed to fetch users" }, { status: 500 });
+        }
+
+        const targetUser = authUser.users.find(user => user.email === email);
+        if (!targetUser) {
+            return NextResponse.json({ error: "User not found" }, { status: 404 });
+        }
+
+        // Find user profile
         const { data: user, error: userError } = await supabase
             .from("user_profiles")
             .select("id")
-            .eq("id", (await supabase.auth.admin.getUserByEmail(email)).data.user?.id)
+            .eq("id", targetUser.id)
             .single();
 
         if (userError || !user) {
