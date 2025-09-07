@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 
-const ReactPlayerDynamic = dynamic(() => import("react-player"), { 
+const ReactPlayerDynamic = dynamic(() => import("react-player"), {
     ssr: false,
     loading: () => <div className="aspect-video bg-gray-200 animate-pulse rounded" />
 });
@@ -22,13 +22,12 @@ export default function VideoPlayer({
 }: Props) {
     return (
         <div className="relative aspect-video">
-            {/* @ts-expect-error - ReactPlayer dynamic import typing issue */}
             <ReactPlayerDynamic
+                // @ts-expect-error - ReactPlayer dynamic import typing issue
                 url={url}
                 width={width}
                 height={height}
                 controls={controls}
-                // keep Vimeo config if you use it; YouTube params go in the URL
                 config={{ vimeo: { responsive: true } }}
             />
         </div>
