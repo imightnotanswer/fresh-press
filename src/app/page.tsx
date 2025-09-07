@@ -7,6 +7,10 @@ import Navigation from "@/components/Navigation";
 
 async function getRecentReviews() {
   try {
+    if (!sanity) {
+      console.error("Sanity client not configured");
+      return [];
+    }
     const data = await sanity.fetch(ALL_REVIEWS);
     return data || [];
   } catch (error) {
@@ -17,6 +21,10 @@ async function getRecentReviews() {
 
 async function getRecentMedia() {
   try {
+    if (!sanity) {
+      console.error("Sanity client not configured");
+      return [];
+    }
     const data = await sanity.fetch(ALL_MEDIA);
     return data || [];
   } catch (error) {

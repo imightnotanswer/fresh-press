@@ -22,6 +22,12 @@ export default function MediaPage() {
         async function loadInitialData() {
             try {
                 setLoading(true);
+                if (!sanity) {
+                    console.error("Sanity client not configured");
+                    setMedia([]);
+                    setTags([]);
+                    return;
+                }
                 const [mediaData, tagsData] = await Promise.all([
                     sanity.fetch(ALL_MEDIA),
                     sanity.fetch(ALL_TAGS)
@@ -51,6 +57,11 @@ export default function MediaPage() {
         async function fetchFilteredMedia() {
             try {
                 setLoading(true);
+                if (!sanity) {
+                    console.error("Sanity client not configured");
+                    setMedia([]);
+                    return;
+                }
                 const mediaData = await sanity.fetch(buildMediaQuery({
                     tagIds: filterOptions.selectedTags,
                     sortBy: filterOptions.sortBy

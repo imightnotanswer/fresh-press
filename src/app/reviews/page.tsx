@@ -22,6 +22,12 @@ export default function ReviewsPage() {
         async function loadInitialData() {
             try {
                 setLoading(true);
+                if (!sanity) {
+                    console.error("Sanity client not configured");
+                    setReviews([]);
+                    setTags([]);
+                    return;
+                }
                 const [reviewsData, tagsData] = await Promise.all([
                     sanity.fetch(ALL_REVIEWS),
                     sanity.fetch(ALL_TAGS)
@@ -51,6 +57,11 @@ export default function ReviewsPage() {
         async function fetchFilteredReviews() {
             try {
                 setLoading(true);
+                if (!sanity) {
+                    console.error("Sanity client not configured");
+                    setReviews([]);
+                    return;
+                }
                 const reviewsData = await sanity.fetch(buildReviewsQuery({
                     tagIds: filterOptions.selectedTags,
                     sortBy: filterOptions.sortBy
