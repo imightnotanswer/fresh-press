@@ -1,103 +1,114 @@
-import Image from "next/image";
+import Link from "next/link";
+import { sanity } from "@/lib/sanity";
+import { ALL_REVIEWS, ALL_MEDIA } from "@/lib/groq";
+import ReviewCard from "@/components/ReviewCard";
+import MediaCard from "@/components/MediaCard";
+import Navigation from "@/components/Navigation";
 
-export default function Home() {
+async function getRecentReviews() {
+  try {
+    const data = await sanity.fetch(ALL_REVIEWS);
+    return data || [];
+  } catch (error) {
+    console.error("Error fetching reviews:", error);
+    return [];
+  }
+}
+
+async function getRecentMedia() {
+  try {
+    const data = await sanity.fetch(ALL_MEDIA);
+    return data || [];
+  } catch (error) {
+    console.error("Error fetching media:", error);
+    return [];
+  }
+}
+
+export default async function Home() {
+  const [reviews, media] = await Promise.all([
+    getRecentReviews(),
+    getRecentMedia()
+  ]);
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="min-h-screen bg-white">
+      {/* Navigation */}
+      <Navigation />
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="mb-16">
+          <h1 className="cutting-edge-section-title">Latest Music</h1>
+          <p className="cutting-edge-section-subtitle">Reviews, videos, and more from the music world</p>
         </div>
+
+        {/* Recent Reviews Section */}
+        <section className="mb-20">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="cutting-edge-section-title">Recent Reviews</h2>
+              <p className="cutting-edge-section-subtitle">Latest music reviews and critiques</p>
+            </div>
+            <Link
+              href="/reviews"
+              className="cutting-edge-button-outline"
+            >
+              View all reviews
+            </Link>
+          </div>
+
+          {reviews.length === 0 ? (
+            <div className="text-center py-12 bg-gray-50 border border-gray-200 rounded-lg">
+              <div className="mx-auto w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mb-4">
+                <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <p className="text-gray-600 text-lg">No reviews yet. Check back soon!</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {reviews.slice(0, 4).map((review: any) => (
+                <ReviewCard key={review._id} review={review} />
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Recent Media Section */}
+        <section>
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="cutting-edge-section-title">Recent Media</h2>
+              <p className="cutting-edge-section-subtitle">Latest videos, podcasts, and media content</p>
+            </div>
+            <Link
+              href="/media"
+              className="cutting-edge-button-outline"
+            >
+              View all media
+            </Link>
+          </div>
+
+          {media.length === 0 ? (
+            <div className="text-center py-12 bg-gray-50 border border-gray-200 rounded-lg">
+              <div className="mx-auto w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mb-4">
+                <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <p className="text-gray-600 text-lg">No media content yet. Check back soon!</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {media.slice(0, 4).map((mediaItem: any) => (
+                <MediaCard key={mediaItem._id} media={mediaItem} />
+              ))}
+            </div>
+          )}
+        </section>
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
     </div>
   );
 }
