@@ -65,6 +65,10 @@ export async function PUT(request: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        if (!supabase) {
+            return NextResponse.json({ error: "Database not configured" }, { status: 503 });
+        }
+
         const { username, display_name, bio, is_public } = await request.json();
 
         const { data, error } = await supabase
