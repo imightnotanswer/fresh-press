@@ -25,7 +25,7 @@ export default function VideoPlayer({
                 height={height}
                 controls={controls}
                 // keep Vimeo config if you use it; YouTube params go in the URL
-                config={{ vimeo: { playerOptions: { responsive: true } } }}
+                config={{ vimeo: { responsive: true } }}
             />
         </div>
     );
