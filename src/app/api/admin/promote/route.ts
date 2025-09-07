@@ -10,6 +10,10 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        if (!supabase) {
+            return NextResponse.json({ error: "Database not configured" }, { status: 503 });
+        }
+
         // Check if current user is already admin
         const { data: currentProfile, error: currentError } = await supabase
             .from("user_profiles")

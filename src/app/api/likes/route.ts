@@ -10,6 +10,10 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        if (!supabase) {
+            return NextResponse.json({ error: "Database not configured" }, { status: 503 });
+        }
+
         const { postId, postType } = await request.json();
         if (!postId || !postType) {
             return NextResponse.json({ error: "Missing postId or postType" }, { status: 400 });

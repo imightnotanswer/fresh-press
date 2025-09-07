@@ -10,6 +10,10 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        if (!supabase) {
+            return NextResponse.json({ error: "Database not configured" }, { status: 503 });
+        }
+
         // Check if user is admin
         const { data: profile, error } = await supabase
             .from("user_profiles")
