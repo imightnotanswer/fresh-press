@@ -48,7 +48,11 @@ export default async function MediaPage({ params }: MediaPageProps) {
                                 controls
                                 config={{
                                     youtube: {
-                                        playerVars: { showinfo: 1 }
+                                        // valid IFrame API params live directly under `youtube`
+                                        rel: 0,
+                                        modestbranding: 1,
+                                        playsinline: 1,
+                                        // controls: 1, // optional
                                     },
                                     vimeo: {
                                         playerOptions: { responsive: true }
