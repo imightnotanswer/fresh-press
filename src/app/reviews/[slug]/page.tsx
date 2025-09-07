@@ -19,6 +19,10 @@ interface ReviewPageProps {
 
 async function getReview(slug: string) {
     try {
+        if (!sanity) {
+            console.error("Sanity client not configured");
+            return null;
+        }
         const review = await sanity.fetch(REVIEW_BY_SLUG, { slug });
         return review;
     } catch (error) {
@@ -29,6 +33,10 @@ async function getReview(slug: string) {
 
 async function getRelatedReviews(artistId: string) {
     try {
+        if (!sanity) {
+            console.error("Sanity client not configured");
+            return [];
+        }
         const reviews = await sanity.fetch(RELATED_BY_ARTIST, { artistId });
         return reviews || [];
     } catch (error) {

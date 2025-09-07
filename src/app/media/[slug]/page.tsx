@@ -13,6 +13,10 @@ interface MediaPageProps {
 
 async function getMedia(slug: string) {
     try {
+        if (!sanity) {
+            console.error("Sanity client not configured");
+            return null;
+        }
         const media = await sanity.fetch(MEDIA_BY_SLUG, { slug });
         return media;
     } catch (error) {

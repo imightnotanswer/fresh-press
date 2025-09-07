@@ -16,6 +16,10 @@ interface ArtistPageProps {
 
 async function getArtist(slug: string) {
     try {
+        if (!sanity) {
+            console.error("Sanity client not configured");
+            return null;
+        }
         const artist = await sanity.fetch(ARTIST_BY_SLUG, { slug });
         return artist;
     } catch (error) {
@@ -26,6 +30,10 @@ async function getArtist(slug: string) {
 
 async function getArtistContent(artistId: string) {
     try {
+        if (!sanity) {
+            console.error("Sanity client not configured");
+            return [];
+        }
         const content = await sanity.fetch(ARTIST_CONTENT, { artistId });
         return content || [];
     } catch (error) {

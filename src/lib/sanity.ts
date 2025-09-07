@@ -1,8 +1,8 @@
 // src/lib/sanity.ts
 import { createClient } from "@sanity/client";
 
-const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID!;
-const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET!;
+const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID;
+const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET;
 
 // Prefer public var for client components; fall back to private; default to a fixed date.
 const rawApi =
@@ -22,11 +22,12 @@ if (!/^1$|^\d{4}-\d{2}-\d{2}$/.test(apiVersion)) {
 
 const isServer = typeof window === "undefined";
 
-export const sanity = createClient({
+// Only create Sanity client if environment variables are available
+export const sanity = projectId && dataset ? createClient({
     projectId,
     dataset,
     apiVersion,
     useCdn: !isServer, // use CDN in browser, uncached on server
     // Never send your read token to the browser:
     token: isServer ? process.env.SANITY_READ_TOKEN : undefined,
-});
+}) : null;
