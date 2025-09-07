@@ -7,6 +7,21 @@ import { verifyHCaptcha } from "@/lib/hcaptcha";
 import { processMarkdown } from "@/lib/markdown";
 import { z } from "zod";
 
+// --- add this helper near the top of the file ---
+function getClientIp(req: NextRequest): string {
+  // Vercel/Proxies put the original client IP first in x-forwarded-for
+  const xff = req.headers.get("x-forwarded-for");
+  if (xff) {
+    const first = xff.split(",")[0]?.trim();
+    if (first) return first;
+  }
+  return (
+    req.headers.get("x-real-ip") ??
+    req.headers.get("cf-connecting-ip") ??
+    "127.0.0.1"
+  );
+}
+
 const commentSchema = z.object({
     postType: z.enum(["review", "media"]),
     postId: z.string(),
@@ -36,8 +51,8 @@ export async function POST(request: NextRequest) {
         }
 
         // Rate limiting
-        const ip = request.ip ?? "127.0.0.1";
-        const { success } = await rateLimit.limit(ip);
+        const ip = getClientIp(request);
+        const { success } = await rateLimit.limit(`comments:${ip}`); // optional namespace
         if (!success) {
             return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
         }
