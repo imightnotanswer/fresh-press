@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Build nested tree structure
-        const commentMap = new Map();
+        const commentMap = new Map<string, any>();
         const rootComments: any[] = [];
 
         // First pass: create map of all comments

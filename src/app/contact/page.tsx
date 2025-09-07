@@ -24,9 +24,9 @@ export default function ContactPage() {
                             Want Your Music Reviewed?
                         </h2>
                         <p className="cutting-edge-blurb mb-6">
-                            We're always looking for fresh, exciting music to feature on Fresh Press.
-                            If you're an artist, band, or label with new music you'd like us to consider for review,
-                            we'd love to hear from you.
+                            We&apos;re always looking for fresh, exciting music to feature on Fresh Press.
+                            If you&apos;re an artist, band, or label with new music you&apos;d like us to consider for review,
+                            we&apos;d love to hear from you.
                         </p>
                         <div className="bg-gray-50 p-6 rounded-lg">
                             <h3 className="font-semibold text-lg mb-2">Send us your music:</h3>
@@ -35,7 +35,7 @@ export default function ContactPage() {
                             </p>
                             <p className="text-sm text-gray-600">
                                 Please include your artist name, track/album title, and a brief description.
-                                We'll review all submissions and get back to you if we're interested in featuring your work.
+                                We&apos;ll review all submissions and get back to you if we&apos;re interested in featuring your work.
                             </p>
                         </div>
                     </div>
@@ -47,7 +47,7 @@ export default function ContactPage() {
                         </h2>
                         <p className="cutting-edge-blurb mb-6">
                             Have a question, suggestion, or just want to say hello?
-                            We'd love to hear from you.
+                            We&apos;d love to hear from you.
                         </p>
                         <div className="space-y-4">
                             <div>
@@ -74,7 +74,7 @@ export default function ContactPage() {
                         </h2>
                         <p className="cutting-edge-blurb mb-6">
                             We focus on independent artists, emerging talent, and music that pushes boundaries.
-                            While we can't review everything, we're particularly interested in:
+                            While we can&apos;t review everything, we&apos;re particularly interested in:
                         </p>
                         <ul className="text-left space-y-2 text-gray-700">
                             <li>• Original, innovative music across all genres</li>

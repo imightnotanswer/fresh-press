@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,16 +18,30 @@ import {
     Trash2
 } from "lucide-react";
 
+interface User {
+    id: string;
+    name: string;
+    email: string;
+    createdAt: string;
+}
+
+interface Comment {
+    id: string;
+    content: string;
+    author: string;
+    createdAt: string;
+}
+
 interface AdminStats {
     totalUsers: number;
     totalComments: number;
     totalLikes: number;
-    recentUsers: any[];
-    recentComments: any[];
+    recentUsers: User[];
+    recentComments: Comment[];
 }
 
 export default function AdminDashboard() {
-    const { data: session, status } = useSession();
+    const { status } = useSession();
     const [isAdmin, setIsAdmin] = useState(false);
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState<AdminStats | null>(null);
@@ -38,9 +53,9 @@ export default function AdminDashboard() {
         if (status === "authenticated") {
             checkAdminStatus();
         }
-    }, [status]);
+    }, [status, checkAdminStatus]);
 
-    const checkAdminStatus = async () => {
+    const checkAdminStatus = useCallback(async () => {
         try {
             const response = await fetch("/api/admin/check");
             if (response.ok) {
@@ -55,7 +70,7 @@ export default function AdminDashboard() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     const fetchStats = async () => {
         try {
@@ -99,10 +114,10 @@ export default function AdminDashboard() {
                             <Shield className="h-16 w-16 text-red-500 mx-auto mb-4" />
                             <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
                             <p className="text-gray-600 mb-6">
-                                You don't have admin privileges to access this page.
+                                You don&apos;t have admin privileges to access this page.
                             </p>
                             <Button asChild>
-                                <a href="/">Go Home</a>
+                                <Link href="/">Go Home</Link>
                             </Button>
                         </CardContent>
                     </Card>
