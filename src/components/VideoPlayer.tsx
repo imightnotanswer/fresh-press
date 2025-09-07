@@ -1,12 +1,11 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import type ReactPlayer from "react-player";
 
 const ReactPlayerDynamic = dynamic(() => import("react-player"), { 
     ssr: false,
     loading: () => <div className="aspect-video bg-gray-200 animate-pulse rounded" />
-}) as typeof ReactPlayer;
+});
 
 type Props = {
     url: string;
@@ -23,6 +22,7 @@ export default function VideoPlayer({
 }: Props) {
     return (
         <div className="relative aspect-video">
+            {/* @ts-expect-error - ReactPlayer dynamic import typing issue */}
             <ReactPlayerDynamic
                 url={url}
                 width={width}
