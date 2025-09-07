@@ -5,7 +5,9 @@ import { MEDIA_BY_SLUG } from "@/lib/groq";
 import Comments from "@/components/Comments";
 import AuthButton from "@/components/AuthButton";
 import Navigation from "@/components/Navigation";
-import ReactPlayer from "react-player";
+import dynamic from "next/dynamic";
+
+const ReactPlayer = dynamic(() => import("react-player/lazy"), { ssr: false });
 
 interface MediaPageProps {
     params: Promise<{
@@ -31,6 +33,17 @@ export default async function MediaPage({ params }: MediaPageProps) {
         notFound();
     }
 
+    // Extract YouTube ID from URL if it's a YouTube video
+    const getYouTubeId = (url: string) => {
+        const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/);
+        return match ? match[1] : null;
+    };
+
+    const youtubeId = media.videoUrl ? getYouTubeId(media.videoUrl) : null;
+    const playerUrl = youtubeId 
+        ? `https://www.youtube-nocookie.com/watch?v=${youtubeId}&rel=0&modestbranding=1&playsinline=1`
+        : media.videoUrl;
+
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Header */}
@@ -42,16 +55,11 @@ export default async function MediaPage({ params }: MediaPageProps) {
                     {media.videoUrl && (
                         <div className="aspect-video bg-black rounded-lg overflow-hidden">
                             <ReactPlayer
-                                url={media.videoUrl}
+                                url={playerUrl}
                                 width="100%"
                                 height="100%"
                                 controls
                                 config={{
-                                    youtube: {
-                                        // Only use parameters that are actually supported by ReactPlayer types
-                                        rel: 0,
-                                        playsinline: 1,
-                                    },
                                     vimeo: {
                                         playerOptions: { responsive: true }
                                     }
