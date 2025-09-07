@@ -3,6 +3,10 @@ import { supabaseServer as supabase } from "@/lib/supabase-server";
 
 export async function GET() {
     try {
+        if (!supabase) {
+            return NextResponse.json({ error: "Database not configured" }, { status: 503 });
+        }
+
         // Get table schemas using information_schema
         const { data: tableInfo, error } = await supabase
             .rpc('get_table_columns', {

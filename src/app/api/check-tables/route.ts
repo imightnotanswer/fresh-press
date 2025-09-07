@@ -3,6 +3,10 @@ import { supabaseServer as supabase } from "@/lib/supabase-server";
 
 export async function GET() {
     try {
+        if (!supabase) {
+            return NextResponse.json({ error: "Database not configured" }, { status: 503 });
+        }
+
         // Check if user_profiles table exists and get its structure
         const { data: userProfiles, error: userProfilesError } = await supabase
             .from("user_profiles")
