@@ -8,7 +8,7 @@ import Navigation from "@/components/Navigation";
 import VideoPlayer from "@/components/VideoPlayer";
 
 interface MediaPageProps {
-    params: { slug: string };
+    params: Promise<{ slug: string }>;
 }
 
 async function getMedia(slug: string) {
@@ -22,7 +22,7 @@ async function getMedia(slug: string) {
 }
 
 export default async function MediaPage({ params }: MediaPageProps) {
-    const { slug } = params;
+    const { slug } = await params;
     const media = await getMedia(slug);
 
     if (!media) {
@@ -36,7 +36,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
     };
 
     const youtubeId = media.videoUrl ? getYouTubeId(media.videoUrl) : null;
-    const playerUrl = youtubeId 
+    const playerUrl = youtubeId
         ? `https://www.youtube-nocookie.com/watch?v=${youtubeId}&rel=0&modestbranding=1&playsinline=1`
         : media.videoUrl;
 
