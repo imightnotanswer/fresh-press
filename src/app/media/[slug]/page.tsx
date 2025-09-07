@@ -48,11 +48,9 @@ export default async function MediaPage({ params }: MediaPageProps) {
                                 controls
                                 config={{
                                     youtube: {
-                                        // valid IFrame API params live directly under `youtube`
+                                        // Only use parameters that are actually supported by ReactPlayer types
                                         rel: 0,
-                                        modestbranding: 1,
                                         playsinline: 1,
-                                        // controls: 1, // optional
                                     },
                                     vimeo: {
                                         playerOptions: { responsive: true }
