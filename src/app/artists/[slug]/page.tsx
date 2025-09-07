@@ -9,9 +9,9 @@ import AuthButton from "@/components/AuthButton";
 import Navigation from "@/components/Navigation";
 
 interface ArtistPageProps {
-    params: {
+    params: Promise<{
         slug: string;
-    };
+    }>;
 }
 
 async function getArtist(slug: string) {

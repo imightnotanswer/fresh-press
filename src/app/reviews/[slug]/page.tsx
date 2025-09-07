@@ -12,9 +12,9 @@ import ClickableImage from "@/components/ClickableImage";
 
 
 interface ReviewPageProps {
-    params: {
+    params: Promise<{
         slug: string;
-    };
+    }>;
 }
 
 async function getReview(slug: string) {

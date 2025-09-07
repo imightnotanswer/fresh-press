@@ -8,9 +8,9 @@ import Navigation from "@/components/Navigation";
 import ReactPlayer from "react-player";
 
 interface MediaPageProps {
-    params: {
+    params: Promise<{
         slug: string;
-    };
+    }>;
 }
 
 async function getMedia(slug: string) {
