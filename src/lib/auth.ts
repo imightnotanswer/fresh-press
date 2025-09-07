@@ -8,12 +8,17 @@ import { supabaseServer as supabase } from "./supabase-server";
 // Initialize Resend if API key is available
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
+// Only initialize Supabase adapter if environment variables are available
+const supabaseAdapter = process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
+    ? SupabaseAdapter({
+        url: process.env.SUPABASE_URL,
+        secret: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    })
+    : undefined;
+
 export const authOptions: NextAuthOptions = {
     secret: process.env.NEXTAUTH_SECRET,
-    adapter: SupabaseAdapter({
-        url: process.env.SUPABASE_URL!,
-        secret: process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    }),
+    ...(supabaseAdapter && { adapter: supabaseAdapter }),
     providers: [
         GitHubProvider({
             clientId: process.env.GITHUB_ID!,
