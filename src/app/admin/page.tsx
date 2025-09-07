@@ -46,15 +46,6 @@ export default function AdminDashboard() {
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState<AdminStats | null>(null);
 
-    useEffect(() => {
-        if (status === "unauthenticated") {
-            redirect("/api/auth/signin");
-        }
-        if (status === "authenticated") {
-            checkAdminStatus();
-        }
-    }, [status, checkAdminStatus]);
-
     const checkAdminStatus = useCallback(async () => {
         try {
             const response = await fetch("/api/admin/check");
@@ -71,6 +62,15 @@ export default function AdminDashboard() {
             setLoading(false);
         }
     }, []);
+
+    useEffect(() => {
+        if (status === "unauthenticated") {
+            redirect("/api/auth/signin");
+        }
+        if (status === "authenticated") {
+            checkAdminStatus();
+        }
+    }, [status, checkAdminStatus]);
 
     const fetchStats = async () => {
         try {
