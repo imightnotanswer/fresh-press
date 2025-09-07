@@ -5,14 +5,10 @@ import { MEDIA_BY_SLUG } from "@/lib/groq";
 import Comments from "@/components/Comments";
 import AuthButton from "@/components/AuthButton";
 import Navigation from "@/components/Navigation";
-import dynamic from "next/dynamic";
-
-const ReactPlayer = dynamic(() => import("react-player/lazy"), { ssr: false });
+import VideoPlayer from "@/components/VideoPlayer";
 
 interface MediaPageProps {
-    params: Promise<{
-        slug: string;
-    }>;
+    params: { slug: string };
 }
 
 async function getMedia(slug: string) {
@@ -26,7 +22,7 @@ async function getMedia(slug: string) {
 }
 
 export default async function MediaPage({ params }: MediaPageProps) {
-    const { slug } = await params;
+    const { slug } = params;
     const media = await getMedia(slug);
 
     if (!media) {
@@ -53,18 +49,8 @@ export default async function MediaPage({ params }: MediaPageProps) {
                 <div className="space-y-8">
                     {/* Video Player */}
                     {media.videoUrl && (
-                        <div className="aspect-video bg-black rounded-lg overflow-hidden">
-                            <ReactPlayer
-                                url={playerUrl}
-                                width="100%"
-                                height="100%"
-                                controls
-                                config={{
-                                    vimeo: {
-                                        playerOptions: { responsive: true }
-                                    }
-                                }}
-                            />
+                        <div className="bg-black rounded-lg overflow-hidden">
+                            <VideoPlayer url={playerUrl} />
                         </div>
                     )}
 
