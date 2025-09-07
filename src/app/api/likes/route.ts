@@ -70,6 +70,10 @@ export async function DELETE(request: NextRequest) {
             return NextResponse.json({ error: "Missing postId or postType" }, { status: 400 });
         }
 
+        if (!supabase) {
+            return NextResponse.json({ error: "Database not configured" }, { status: 503 });
+        }
+
         const { error } = await supabase
             .from("likes")
             .delete()
