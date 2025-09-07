@@ -51,10 +51,12 @@ export async function POST(request: NextRequest) {
         }
 
         // Rate limiting
-        const ip = getClientIp(request);
-        const { success } = await rateLimit.limit(`comments:${ip}`); // optional namespace
-        if (!success) {
-            return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
+        if (rateLimit) {
+            const ip = getClientIp(request);
+            const { success } = await rateLimit.limit(`comments:${ip}`); // optional namespace
+            if (!success) {
+                return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
+            }
         }
 
         // Process markdown
