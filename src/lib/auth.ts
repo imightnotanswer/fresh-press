@@ -169,6 +169,11 @@ export const authOptions: NextAuthOptions = {
     secret: process.env.NEXTAUTH_SECRET,
     ...(supabaseAdapter && { adapter: supabaseAdapter }),
     providers,
+    pages: {
+        signIn: "/signin",
+        error: "/signin",
+    },
+    debug: process.env.NODE_ENV !== "production",
     session: {
         strategy: "jwt",
     },
