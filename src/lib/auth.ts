@@ -184,4 +184,47 @@ export const authOptions: NextAuthOptions = {
             return session;
         },
     },
+    events: {
+        // Create a user_profile row the first time a user is created
+        async createUser(message) {
+            try {
+                if (!supabase) return;
+                const { id, email, name, image } = message.user as any;
+                await supabase
+                    .from("user_profiles")
+                    .upsert({
+                        id,
+                        username: (email || "").split("@")[0],
+                        display_name: name || (email || "").split("@")[0],
+                        avatar_url: image || null,
+                        is_public: true,
+                        updated_at: new Date().toISOString(),
+                    }, { onConflict: "id" });
+            } catch (e) {
+                console.warn("createUser event: failed to upsert user_profiles", e);
+            }
+        },
+        // Also ensure profile exists on login (covers existing users)
+        async signIn(message) {
+            try {
+                if (!supabase) return true;
+                const user = (message as any).user;
+                if (!user?.id) return true;
+                await supabase
+                    .from("user_profiles")
+                    .upsert({
+                        id: user.id,
+                        username: (user.email || "").split("@")[0],
+                        display_name: user.name || (user.email || "").split("@")[0],
+                        avatar_url: user.image || null,
+                        is_public: true,
+                        updated_at: new Date().toISOString(),
+                    }, { onConflict: "id" });
+                return true;
+            } catch (e) {
+                console.warn("signIn event: failed to upsert user_profiles", e);
+                return true;
+            }
+        },
+    },
 };
