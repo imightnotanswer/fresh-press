@@ -8,10 +8,10 @@ import Navigation from "@/components/Navigation";
 import VideoPlayer from "@/components/VideoPlayer";
 import { getYouTubeId } from "@/lib/youtube";
 import LikeButton from "@/components/LikeButton";
-import { headers } from "next/headers";
 
 interface MediaPageProps {
     params: Promise<{ slug: string }>;
+    searchParams?: { [key: string]: string | string[] | undefined };
 }
 
 async function getMedia(slug: string) {
@@ -28,7 +28,7 @@ async function getMedia(slug: string) {
     }
 }
 
-export default async function MediaPage({ params }: MediaPageProps) {
+export default async function MediaPage({ params, searchParams }: MediaPageProps) {
     const { slug } = await params;
     const media = await getMedia(slug);
 
@@ -36,28 +36,18 @@ export default async function MediaPage({ params }: MediaPageProps) {
         notFound();
     }
 
-    // Read search params from the request to pass start time and volume
-    let playerUrl = media.videoUrl;
-    try {
-        const h = await headers();
-        const referer = h.get('referer') || '';
-        const reqUrl = h.get('x-next-url') || '';
-        // Prefer x-next-url when present (Next 15). Fallback to referer parsing as best-effort.
-        const raw = reqUrl || referer;
-        if (raw) {
-            const u = new URL(raw, 'https://dummy');
-            const t = u.searchParams.get('t');
-            const v = u.searchParams.get('v'); // 0-100
-            if (t) {
-                const sep = playerUrl.includes('?') ? '&' : '?';
-                playerUrl = `${playerUrl}${sep}t=${encodeURIComponent(t)}`;
-            }
-            if (v) {
-                const sep2 = playerUrl.includes('?') ? '&' : '?';
-                playerUrl = `${playerUrl}${sep2}v=${encodeURIComponent(v)}`;
-            }
-        }
-    } catch {}
+    // Read search params (?t=, ?v=) directly and pass through to the player URL
+    let playerUrl = media.videoUrl as string;
+    const tParam = (searchParams?.["t"] as string | undefined) ?? undefined;
+    const vParam = (searchParams?.["v"] as string | undefined) ?? undefined;
+    if (tParam) {
+        const sep = playerUrl.includes('?') ? '&' : '?';
+        playerUrl = `${playerUrl}${sep}t=${encodeURIComponent(tParam)}`;
+    }
+    if (vParam) {
+        const sep = playerUrl.includes('?') ? '&' : '?';
+        playerUrl = `${playerUrl}${sep}v=${encodeURIComponent(vParam)}`;
+    }
 
     return (
         <div className="min-h-screen bg-gray-50">
