@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Play } from "lucide-react";
+import VideoPlayer from "./VideoPlayer";
 
 interface MediaCardProps {
     media: {
@@ -14,6 +16,7 @@ interface MediaCardProps {
             name: string;
             slug: { current: string };
         };
+        coverUrl?: string;
         videoUrl?: string;
         description?: string;
     };
@@ -23,10 +26,36 @@ export default function MediaCard({ media }: MediaCardProps) {
     return (
         <div className="cutting-edge-card">
             <Link href={`/media/${media.slug.current}`}>
-                <div className="aspect-video relative bg-gray-100 flex items-center justify-center group">
-                    <div className="w-16 h-16 bg-black bg-opacity-20 rounded-full flex items-center justify-center group-hover:bg-opacity-30 transition-all">
-                        <Play className="w-8 h-8 text-black ml-1" />
-                    </div>
+                <div className="aspect-video relative bg-gray-100 group overflow-hidden">
+                    {media.videoUrl ? (
+                        <VideoPlayer 
+                            url={media.videoUrl} 
+                            width="100%" 
+                            height="100%"
+                            controls={false}
+                        />
+                    ) : media.coverUrl ? (
+                        <Image
+                            src={media.coverUrl}
+                            alt={media.title}
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                            <div className="w-16 h-16 bg-black bg-opacity-20 rounded-full flex items-center justify-center group-hover:bg-opacity-30 transition-all">
+                                <Play className="w-8 h-8 text-black ml-1" />
+                            </div>
+                        </div>
+                    )}
+                    {/* Play overlay for video thumbnails */}
+                    {media.videoUrl && (
+                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center">
+                            <div className="w-16 h-16 bg-white bg-opacity-90 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
+                                <Play className="w-8 h-8 text-black ml-1" />
+                            </div>
+                        </div>
+                    )}
                 </div>
                 <div className="p-4">
                     <div className="space-y-3">
