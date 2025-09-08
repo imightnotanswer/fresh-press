@@ -6,7 +6,6 @@ import Comments from "@/components/Comments";
 import AuthButton from "@/components/AuthButton";
 import Navigation from "@/components/Navigation";
 import VideoPlayer from "@/components/VideoPlayer";
-import VideoPlayer from "@/components/VideoPlayer";
 import { getYouTubeId } from "@/lib/youtube";
 import LikeButton from "@/components/LikeButton";
 
