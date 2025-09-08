@@ -114,10 +114,12 @@ export default function ProfilePage() {
                                     <p className="text-gray-700">{profile.bio}</p>
                                 )}
                             </div>
-                            <Button variant="outline" size="sm">
-                                <Settings className="h-4 w-4 mr-2" />
-                                Edit Profile
-                            </Button>
+                            <Link href="/profile/edit">
+                                <Button variant="outline" size="sm">
+                                    <Settings className="h-4 w-4 mr-2" />
+                                    Edit Profile
+                                </Button>
+                            </Link>
                         </div>
                     </CardContent>
                 </Card>

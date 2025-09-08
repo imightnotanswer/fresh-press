@@ -13,6 +13,7 @@ export async function POST(request: NextRequest) {
 
         // Check if user exists
         const { data: existing } = await supabase
+            .schema("next_auth")
             .from("users")
             .select("id")
             .eq("email", normalizedEmail)
@@ -23,6 +24,7 @@ export async function POST(request: NextRequest) {
 
         // Create user in next_auth.users
         const { data: user, error: createErr } = await supabase
+            .schema("next_auth")
             .from("users")
             .insert({ email: normalizedEmail, name })
             .select("id")
@@ -34,6 +36,7 @@ export async function POST(request: NextRequest) {
         // Store password hash in user_credentials
         const passwordHash = await bcrypt.hash(password, 12);
         const { error: credErr } = await supabase
+            .schema("next_auth")
             .from("user_credentials")
             .insert({ user_id: user.id, password_hash: passwordHash });
         if (credErr) {

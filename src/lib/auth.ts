@@ -140,6 +140,7 @@ if (supabaseAdapter) {
                 // Look up user by email from next_auth.users
                 if (!supabase) return null;
                 const { data: user, error } = await supabase
+                    .schema("next_auth")
                     .from("users")
                     .select("id, email, name")
                     .eq("email", email)
@@ -148,6 +149,7 @@ if (supabaseAdapter) {
 
                 // Fetch password hash from our credential table
                 const { data: cred } = await supabase
+                    .schema("next_auth")
                     .from("user_credentials")
                     .select("password_hash")
                     .eq("user_id", user.id)
