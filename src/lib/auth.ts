@@ -15,6 +15,8 @@ const supabaseAdapter = SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
     ? SupabaseAdapter({
         url: SUPABASE_URL,
         secret: process.env.SUPABASE_SERVICE_ROLE_KEY,
+        // Our NextAuth tables are created in the public schema
+        schema: "public",
     })
     : undefined;
 
