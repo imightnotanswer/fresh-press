@@ -5,7 +5,7 @@ import Image from "next/image";
 import dynamic from "next/dynamic";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Play } from "lucide-react";
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { getYouTubeThumbnail, isYouTubeUrl, isVimeoUrl, getVimeoThumbnail, getYouTubeId } from "@/lib/youtube";
 import { useRouter } from "next/navigation";
 
@@ -32,7 +32,9 @@ export default function MediaCard({ media }: MediaCardProps) {
     const [isPlayingInline, setIsPlayingInline] = useState(false);
     const [playedSeconds, setPlayedSeconds] = useState(0);
     const [inlineError, setInlineError] = useState<string | null>(null);
+    const [volumePercent, setVolumePercent] = useState<number>(100);
     const playerRef = useRef<any>(null);
+    const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
     // Get thumbnail URL based on video type
     const getThumbnailUrl = () => {
@@ -75,21 +77,58 @@ export default function MediaCard({ media }: MediaCardProps) {
             }
         } catch { }
 
-        let volumePercent = 100;
+        let vol = volumePercent;
         try {
             const internal = playerRef.current?.getInternalPlayer?.();
             if (internal?.getVolume) {
-                const vol = internal.getVolume();
-                if (typeof vol === 'number') volumePercent = Math.max(0, Math.min(100, Math.floor(vol)));
+                const v = internal.getVolume();
+                if (typeof v === 'number') vol = Math.max(0, Math.min(100, Math.floor(v)));
             }
         } catch { }
 
         const params: string[] = [];
         if (time > 0) params.push(`t=${Math.floor(time)}`);
-        if (volumePercent !== 100) params.push(`v=${volumePercent}`);
+        if (vol !== 100) params.push(`v=${vol}`);
         const qs = params.length ? `?${params.join('&')}` : '';
         return `/media/${media.slug.current}${qs}`;
-    }, [media.slug.current, playedSeconds]);
+    }, [media.slug.current, playedSeconds, volumePercent]);
+
+    // If using native YouTube iframe, use postMessage API to poll time/volume
+    useEffect(() => {
+        if (!isPlayingInline || !youTubeId || !iframeRef.current) return;
+
+        const listener = (event: MessageEvent) => {
+            try {
+                if (typeof event.data !== 'string') return;
+                const data = JSON.parse(event.data);
+                if (!data || data.event !== 'infoDelivery' || !data.info) return;
+                if (typeof data.info.currentTime === 'number') setPlayedSeconds(data.info.currentTime);
+                if (typeof data.info.volume === 'number') setVolumePercent(Math.max(0, Math.min(100, Math.floor(data.info.volume))));
+            } catch { }
+        };
+
+        window.addEventListener('message', listener);
+
+        const send = (payload: any) => {
+            try {
+                iframeRef.current?.contentWindow?.postMessage(JSON.stringify(payload), '*');
+            } catch { }
+        };
+
+        // Let the player know we are listening and poll for updates
+        const poll = setInterval(() => {
+            send({ event: 'command', func: 'getCurrentTime', args: [] });
+            send({ event: 'command', func: 'getVolume', args: [] });
+        }, 1000);
+
+        // Kick off listening handshake
+        send({ event: 'listening' });
+
+        return () => {
+            window.removeEventListener('message', listener);
+            clearInterval(poll);
+        };
+    }, [isPlayingInline, youTubeId]);
 
     return (
         <div className="cutting-edge-card">
@@ -126,7 +165,8 @@ export default function MediaCard({ media }: MediaCardProps) {
                     <div className="absolute inset-0 z-10">
                         {youTubeId ? (
                             <iframe
-                                src={`https://www.youtube.com/embed/${youTubeId}?autoplay=1&mute=1&playsinline=1&controls=1&rel=0&modestbranding=1`}
+                                ref={iframeRef}
+                                src={`https://www.youtube.com/embed/${youTubeId}?autoplay=1&mute=0&playsinline=1&controls=1&rel=0&modestbranding=1&enablejsapi=1`}
                                 width="100%"
                                 height="100%"
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
