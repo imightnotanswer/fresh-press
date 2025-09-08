@@ -24,7 +24,10 @@ const supabaseAdapter = SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
 // Build providers list conditionally to avoid runtime errors when some envs are missing
 const providers: NextAuthOptions["providers"] = [];
 const isProduction = process.env.NODE_ENV === "production";
-const enableEmailProvider = (!!resend || !isProduction) && !!supabaseAdapter; // require adapter in addition to Resend
+const hasCustomSmtp = Boolean(
+    process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS
+);
+const enableEmailProvider = (!!resend || hasCustomSmtp || !isProduction) && !!supabaseAdapter; // require adapter
 
 if (process.env.GITHUB_ID && process.env.GITHUB_SECRET) {
     providers.push(
@@ -36,21 +39,21 @@ if (process.env.GITHUB_ID && process.env.GITHUB_SECRET) {
 }
 
 if (enableEmailProvider) {
-    providers.push(
-        EmailProvider({
-            server: {
-                host: "smtp.resend.com",
-                port: 587,
-                auth: {
-                    user: "resend",
-                    pass: process.env.RESEND_API_KEY || "dummy-key",
+    if (resend) {
+        providers.push(
+            EmailProvider({
+                server: {
+                    host: "smtp.resend.com",
+                    port: 587,
+                    auth: {
+                        user: "resend",
+                        pass: process.env.RESEND_API_KEY || "",
+                    },
                 },
-            },
-            from: process.env.EMAIL_FROM || "noreply@freshlypressed.dev",
-            sendVerificationRequest: async ({ identifier: email, url, provider }) => {
-                if (resend) {
+                from: process.env.EMAIL_FROM || "onboarding@resend.dev",
+                sendVerificationRequest: async ({ identifier: email, url, provider }) => {
                     try {
-                        await resend.emails.send({
+                        await resend!.emails.send({
                             from: provider.from!,
                             to: email,
                             subject: "Sign in to Fresh Press",
@@ -72,18 +75,40 @@ if (enableEmailProvider) {
                             `,
                         });
                     } catch (error) {
-                        // In development, don't fail the request; log and provide URL instead
                         console.warn("Resend failed to send verification email:", error);
                         console.log("Email verification URL:", url);
                     }
-                } else {
-                    // Fallback for development - log the URL
-                    console.log("Email verification URL:", url);
-                    console.log("To enable email sending, configure RESEND_API_KEY in your environment variables");
-                }
-            },
-        })
-    );
+                },
+            })
+        );
+    } else if (hasCustomSmtp) {
+        // Use custom SMTP server (e.g., Gmail). Let NextAuth send via nodemailer.
+        providers.push(
+            EmailProvider({
+                server: {
+                    host: process.env.SMTP_HOST!,
+                    port: Number(process.env.SMTP_PORT || 587),
+                    auth: {
+                        user: process.env.SMTP_USER!,
+                        pass: process.env.SMTP_PASS!,
+                    },
+                },
+                from: process.env.EMAIL_FROM || process.env.SMTP_USER!,
+            })
+        );
+    } else if (!isProduction) {
+        // Dev fallback: no email will be sent; URL will be logged by NextAuth
+        providers.push(
+            EmailProvider({
+                server: {
+                    host: "smtp.resend.com",
+                    port: 587,
+                    auth: { user: "resend", pass: "" },
+                },
+                from: "onboarding@resend.dev",
+            })
+        );
+    }
 }
 
 export const authOptions: NextAuthOptions = {
