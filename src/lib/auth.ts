@@ -20,7 +20,7 @@ const supabaseAdapter = SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
     ) => any)({
         url: SUPABASE_URL,
         secret: process.env.SUPABASE_SERVICE_ROLE_KEY,
-        schema: "public",
+        schema: "next_auth",
     })
     : undefined;
 
