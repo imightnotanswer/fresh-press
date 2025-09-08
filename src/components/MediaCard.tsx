@@ -152,9 +152,9 @@ export default function MediaCard({ media }: MediaCardProps) {
                 {hasVideo && !isPlayingInline && (
                     <button
                         type="button"
-                        onClick={() => router.push(buildDetailHref())}
+                        onClick={handlePlayInline}
                         className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center"
-                        aria-label="Open"
+                        aria-label="Play"
                     >
                         <div className="w-16 h-16 bg-white/90 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
                             <Play className="w-8 h-8 text-black ml-1" />
@@ -191,7 +191,7 @@ export default function MediaCard({ media }: MediaCardProps) {
                             />
                         )}
                         {/* Expand to full post, preserving time/volume */}
-                        
+
                     </div>
                 )}
             </div>
