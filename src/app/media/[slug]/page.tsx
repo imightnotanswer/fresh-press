@@ -64,7 +64,6 @@ export default async function MediaPage({ params, searchParams }: MediaPageProps
                         <div className="bg-black rounded-lg overflow-hidden">
                             <PlayerDock className="relative aspect-video" />
                             {/* Ensure the global player has the correct URL; don't force autoplay */}
-                            {/* @ts-expect-error server to client island */}
                             <EnsurePlayerLoaded url={playerUrl} autoplay={false} />
                         </div>
                     )}
