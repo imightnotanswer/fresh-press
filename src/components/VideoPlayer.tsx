@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useState } from "react";
 import { getYouTubeId, isYouTubeUrl } from "@/lib/youtube";
 
 const ReactPlayerDynamic = dynamic<any>(() => import("react-player"), {
@@ -71,6 +72,12 @@ export default function VideoPlayer({
         }
     })();
 
+    // Autoplay across navigation is often blocked unless muted.
+    // Start muted to guarantee autoplay, then let user unmute with one tap.
+    const [isMuted, setIsMuted] = useState(true);
+
+    const resumeVolume = typeof initialVolume === 'number' ? initialVolume : 1;
+
     return (
         <div className="relative aspect-video">
             <ReactPlayerDynamic
@@ -79,12 +86,22 @@ export default function VideoPlayer({
                 height={height}
                 controls={controls}
                 playing
-                volume={initialVolume}
+                muted={isMuted}
+                volume={isMuted ? 0 : resumeVolume}
                 config={{ youtube: { playerVars: startSeconds > 0 ? { start: startSeconds, playsinline: 1 } : { playsinline: 1 } } }}
                 onReady={() => console.log('ReactPlayer ready')}
                 onError={(error: unknown) => console.error('ReactPlayer error:', error)}
                 onStart={() => console.log('Video started')}
             />
+            {isMuted && (
+                <button
+                    type="button"
+                    onClick={() => setIsMuted(false)}
+                    className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 rounded-full bg-black/70 text-white text-sm px-4 py-2 backdrop-blur hover:bg-black/80"
+                >
+                    Tap to unmute
+                </button>
+            )}
         </div>
     );
 }
