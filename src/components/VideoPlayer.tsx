@@ -38,18 +38,36 @@ export default function VideoPlayer({
         return url;
     })();
 
+    // If YouTube, prefer using the official embed URL which is very reliable
+    const youtubeEmbedUrl = (() => {
+        const id = getYouTubeId(normalizedUrl);
+        return id ? `https://www.youtube.com/embed/${id}` : null;
+    })();
+
     return (
         <div className="relative aspect-video">
-            <ReactPlayerDynamic
-                // @ts-expect-error - ReactPlayer dynamic import typing issue
-                url={normalizedUrl}
-                width={width}
-                height={height}
-                controls={controls}
-                onReady={() => console.log('ReactPlayer ready')}
-                onError={(error) => console.error('ReactPlayer error:', error)}
-                onStart={() => console.log('Video started')}
-            />
+            {youtubeEmbedUrl ? (
+                <iframe
+                    src={youtubeEmbedUrl}
+                    width={width}
+                    height={height}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                    className="w-full h-full rounded"
+                    title="YouTube video player"
+                />
+            ) : (
+                <ReactPlayerDynamic
+                    // @ts-expect-error - ReactPlayer dynamic import typing issue
+                    url={normalizedUrl}
+                    width={width}
+                    height={height}
+                    controls={controls}
+                    onReady={() => console.log('ReactPlayer ready')}
+                    onError={(error) => console.error('ReactPlayer error:', error)}
+                    onStart={() => console.log('Video started')}
+                />
+            )}
         </div>
     );
 }
