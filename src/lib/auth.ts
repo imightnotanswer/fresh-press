@@ -12,10 +12,11 @@ const resend = resendKey && resendKey.startsWith("re_") ? new Resend(resendKey) 
 // Only initialize Supabase adapter if environment variables are available
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAdapter = SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
-    ? SupabaseAdapter({
+    ? (SupabaseAdapter as unknown as (
+        args: { url: string; secret: string; schema?: string }
+    ) => any)({
         url: SUPABASE_URL,
         secret: process.env.SUPABASE_SERVICE_ROLE_KEY,
-        // Our NextAuth tables are created in the public schema
         schema: "public",
     })
     : undefined;
