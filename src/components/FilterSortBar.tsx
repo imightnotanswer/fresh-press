@@ -43,9 +43,9 @@ export default function FilterSortBar({
     const hasActiveFilters = options.selectedTags.length > 0;
 
     return (
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row gap-4 items-center sm:items-center justify-center sm:justify-between text-center sm:text-left mb-8">
             {/* Filter and Sort Controls */}
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 justify-center">
                 {/* Sort Dropdown */}
                 <DropdownMenu open={isSortOpen} onOpenChange={setIsSortOpen}>
                     <DropdownMenuTrigger asChild>
@@ -123,7 +123,7 @@ export default function FilterSortBar({
 
             {/* Active Filters Display */}
             {hasActiveFilters && (
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 justify-center">
                     {options.selectedTags.map((tagSlug) => {
                         const tag = options.availableTags.find(t => t.slug === tagSlug);
                         return (
