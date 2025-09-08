@@ -11,7 +11,7 @@ import LikeButton from "@/components/LikeButton";
 
 interface MediaPageProps {
     params: Promise<{ slug: string }>;
-    searchParams?: { [key: string]: string | string[] | undefined };
+    searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 async function getMedia(slug: string) {
@@ -30,6 +30,7 @@ async function getMedia(slug: string) {
 
 export default async function MediaPage({ params, searchParams }: MediaPageProps) {
     const { slug } = await params;
+    const sp = searchParams ? await searchParams : undefined;
     const media = await getMedia(slug);
 
     if (!media) {
@@ -38,8 +39,8 @@ export default async function MediaPage({ params, searchParams }: MediaPageProps
 
     // Read search params (?t=, ?v=) directly and pass through to the player URL
     let playerUrl = media.videoUrl as string;
-    const tParam = (searchParams?.["t"] as string | undefined) ?? undefined;
-    const vParam = (searchParams?.["v"] as string | undefined) ?? undefined;
+    const tParam = (sp?.["t"] as string | undefined) ?? undefined;
+    const vParam = (sp?.["v"] as string | undefined) ?? undefined;
     if (tParam) {
         const sep = playerUrl.includes('?') ? '&' : '?';
         playerUrl = `${playerUrl}${sep}t=${encodeURIComponent(tParam)}`;
