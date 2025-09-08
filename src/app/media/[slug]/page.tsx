@@ -8,6 +8,7 @@ import Navigation from "@/components/Navigation";
 import VideoPlayer from "@/components/VideoPlayer";
 import { getYouTubeId } from "@/lib/youtube";
 import LikeButton from "@/components/LikeButton";
+import { headers } from "next/headers";
 
 interface MediaPageProps {
     params: Promise<{ slug: string }>;
@@ -35,11 +36,28 @@ export default async function MediaPage({ params }: MediaPageProps) {
         notFound();
     }
 
-    // Support deep-link start time (?t=seconds)
-    // We cannot read search params in an async server component without passing via props.
-    // As a pragmatic approach, allow YouTube-style t param appended on the url itself by the card.
-    // VideoPlayer will normalize/handle embed; we only pass the original URL here.
-    const playerUrl = media.videoUrl;
+    // Read search params from the request to pass start time and volume
+    let playerUrl = media.videoUrl;
+    try {
+        const h = await headers();
+        const referer = h.get('referer') || '';
+        const reqUrl = h.get('x-next-url') || '';
+        // Prefer x-next-url when present (Next 15). Fallback to referer parsing as best-effort.
+        const raw = reqUrl || referer;
+        if (raw) {
+            const u = new URL(raw, 'https://dummy');
+            const t = u.searchParams.get('t');
+            const v = u.searchParams.get('v'); // 0-100
+            if (t) {
+                const sep = playerUrl.includes('?') ? '&' : '?';
+                playerUrl = `${playerUrl}${sep}t=${encodeURIComponent(t)}`;
+            }
+            if (v) {
+                const sep2 = playerUrl.includes('?') ? '&' : '?';
+                playerUrl = `${playerUrl}${sep2}v=${encodeURIComponent(v)}`;
+            }
+        }
+    } catch {}
 
     return (
         <div className="min-h-screen bg-gray-50">

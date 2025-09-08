@@ -57,6 +57,20 @@ export default function VideoPlayer({
         }
     })();
 
+    // Extract initial volume percent (0-100) from query (?v=)
+    const initialVolume = (() => {
+        try {
+            const u = new URL(normalizedUrl);
+            const v = u.searchParams.get('v');
+            if (!v) return undefined as number | undefined;
+            const n = parseInt(v, 10);
+            if (Number.isNaN(n)) return undefined;
+            return Math.max(0, Math.min(100, n)) / 100; // react-player expects 0-1
+        } catch {
+            return undefined;
+        }
+    })();
+
     // If YouTube, prefer using the official embed URL which is very reliable
     const youtubeEmbedUrl = (() => {
         const id = getYouTubeId(normalizedUrl);
@@ -85,6 +99,7 @@ export default function VideoPlayer({
                     width={width}
                     height={height}
                     controls={controls}
+                    volume={initialVolume}
                     config={{ youtube: { playerVars: startSeconds > 0 ? { start: startSeconds } : {} } }}
                     onReady={() => console.log('ReactPlayer ready')}
                     onError={(error: unknown) => console.error('ReactPlayer error:', error)}

@@ -5,8 +5,8 @@ import Image from "next/image";
 import dynamic from "next/dynamic";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Play } from "lucide-react";
-import { useState, useCallback } from "react";
-import { getYouTubeThumbnail, isYouTubeUrl, isVimeoUrl, getVimeoThumbnail, getYouTubeId } from "@/lib/youtube";
+import { useState, useCallback, useRef } from "react";
+import { getYouTubeThumbnail, isYouTubeUrl, isVimeoUrl, getVimeoThumbnail } from "@/lib/youtube";
 import { useRouter } from "next/navigation";
 
 const ReactPlayerDynamic = dynamic<any>(() => import("react-player"), { ssr: false });
@@ -32,6 +32,7 @@ export default function MediaCard({ media }: MediaCardProps) {
     const [isPlayingInline, setIsPlayingInline] = useState(false);
     const [playedSeconds, setPlayedSeconds] = useState(0);
     const [inlineError, setInlineError] = useState<string | null>(null);
+    const playerRef = useRef<any>(null);
 
     // Get thumbnail URL based on video type
     const getThumbnailUrl = () => {
@@ -65,8 +66,30 @@ export default function MediaCard({ media }: MediaCardProps) {
     }, [hasVideo]);
 
     const handleCardClick = useCallback((e: React.MouseEvent) => {
-        // When playing inline, carry progress to detail page as ?t=seconds
-        const href = `/media/${media.slug.current}${playedSeconds > 0 ? `?t=${Math.floor(playedSeconds)}` : ''}`;
+        // When playing inline, carry progress and volume to detail page as ?t=seconds&v=volumePercent
+        let time = playedSeconds;
+        try {
+            if (playerRef.current?.getCurrentTime) {
+                const t = playerRef.current.getCurrentTime();
+                if (typeof t === 'number' && !Number.isNaN(t)) time = t;
+            }
+        } catch {}
+
+        let volumePercent = 100;
+        try {
+            const internal = playerRef.current?.getInternalPlayer?.();
+            // YouTube Iframe API returns 0-100
+            if (internal?.getVolume) {
+                const vol = internal.getVolume();
+                if (typeof vol === 'number') volumePercent = Math.max(0, Math.min(100, Math.floor(vol)));
+            }
+        } catch {}
+
+        const params: string[] = [];
+        if (time > 0) params.push(`t=${Math.floor(time)}`);
+        if (volumePercent !== 100) params.push(`v=${volumePercent}`);
+        const qs = params.length ? `?${params.join('&')}` : '';
+        const href = `/media/${media.slug.current}${qs}`;
         e.preventDefault();
         router.push(href);
     }, [media.slug.current, playedSeconds, router]);
@@ -105,31 +128,19 @@ export default function MediaCard({ media }: MediaCardProps) {
 
                     {hasVideo && isPlayingInline && (
                         <div className="absolute inset-0 z-10">
-                            {youTubeId ? (
-                                <iframe
-                                    src={`https://www.youtube.com/embed/${youTubeId}?autoplay=1&mute=1&playsinline=1`}
-                                    width="100%"
-                                    height="100%"
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                    allowFullScreen
-                                    className="w-full h-full rounded"
-                                    title="Inline YouTube video"
-                                />
-                            ) : (
-                                // Fallback to ReactPlayer for non-YouTube URLs
-                                <ReactPlayerDynamic
-                                    url={media.videoUrl}
-                                    width="100%"
-                                    height="100%"
-                                    playing
-                                    controls
-                                    muted
-                                    onProgress={(state: any) => {
-                                        if (typeof state.playedSeconds === 'number') setPlayedSeconds(state.playedSeconds);
-                                    }}
-                                    onError={(e: unknown) => setInlineError('Playback error')}
-                                />
-                            )}
+                            <ReactPlayerDynamic
+                                ref={playerRef}
+                                url={media.videoUrl}
+                                width="100%"
+                                height="100%"
+                                playing
+                                controls
+                                config={{ youtube: { playerVars: { playsinline: 1 } } }}
+                                onProgress={(state: any) => {
+                                    if (typeof state.playedSeconds === 'number') setPlayedSeconds(state.playedSeconds);
+                                }}
+                                onError={(e: unknown) => setInlineError('Playback error')}
+                            />
                         </div>
                     )}
                 </div>
