@@ -9,8 +9,6 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { getYouTubeThumbnail, isYouTubeUrl, isVimeoUrl, getVimeoThumbnail, getYouTubeId } from "@/lib/youtube";
 import { useRouter } from "next/navigation";
 import LikeButton from "./LikeButton";
-import { PlayerSlot } from "./video/PlayerSlot";
-import { useYoutubePlayer } from "./video/YoutubePlayerProvider";
 
 const ReactPlayerDynamic = dynamic<any>(() => import("react-player"), { ssr: false });
 
@@ -64,18 +62,12 @@ export default function MediaCard({ media }: MediaCardProps) {
     const youTubeId = isYouTubeUrl(media.videoUrl || '') ? getYouTubeId(media.videoUrl || '') : null;
     const inlineUrl = youTubeId ? `https://www.youtube.com/embed/${youTubeId}` : media.videoUrl;
 
-    const yt = useYoutubePlayer();
-
     const handlePlayInline = useCallback(async (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
         if (!hasVideo) return;
-        if (youTubeId) {
-            await yt.load(youTubeId);
-            yt.play();
-        }
         setIsPlayingInline(true);
-    }, [hasVideo, youTubeId, yt]);
+    }, [hasVideo]);
 
     const buildDetailHref = useCallback(() => {
         let time = playedSeconds;
@@ -171,7 +163,34 @@ export default function MediaCard({ media }: MediaCardProps) {
                 )}
 
                 {hasVideo && isPlayingInline && (
-                    <PlayerSlot className="absolute inset-0 z-10" />
+                    <div className="absolute inset-0 z-10">
+                        {youTubeId ? (
+                            <iframe
+                                ref={iframeRef}
+                                src={`https://www.youtube.com/embed/${youTubeId}?autoplay=1&mute=0&playsinline=1&controls=1&rel=0&modestbranding=1`}
+                                width="100%"
+                                height="100%"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                allowFullScreen
+                                className="w-full h-full rounded"
+                                title="Inline YouTube video"
+                            />
+                        ) : (
+                            <ReactPlayerDynamic
+                                ref={playerRef}
+                                url={media.videoUrl as string}
+                                width="100%"
+                                height="100%"
+                                playing
+                                muted
+                                controls
+                                onProgress={(state: any) => {
+                                    if (typeof state.playedSeconds === 'number') setPlayedSeconds(state.playedSeconds);
+                                }}
+                                onError={(e: unknown) => setInlineError('Playback error')}
+                            />
+                        )}
+                    </div>
                 )}
             </div>
             <Link href={buildDetailHref()}>
