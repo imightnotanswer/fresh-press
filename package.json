@@ -10,7 +10,7 @@
     "clean": "rimraf .next || rmdir /s /q .next"
   },
   "dependencies": {
-    "@next-auth/supabase-adapter": "^1.0.0",
+    "@next-auth/supabase-adapter": "^0.2.1",
     "@portabletext/react": "^4.0.3",
     "@radix-ui/react-avatar": "^1.1.10",
     "@radix-ui/react-dropdown-menu": "^2.1.16",
