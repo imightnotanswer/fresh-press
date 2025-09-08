@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { signIn, getProviders } from "next-auth/react";
+import type { ClientSafeProvider } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +14,7 @@ export default function SignInPage() {
     const [email, setEmail] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [emailSent, setEmailSent] = useState(false);
-    const [availableProviders, setAvailableProviders] = useState<Record<string, unknown> | null>(null);
+    const [availableProviders, setAvailableProviders] = useState<Record<string, ClientSafeProvider> | null>(null);
 
     useEffect(() => {
         getProviders().then(setAvailableProviders).catch(() => setAvailableProviders({}));
@@ -107,7 +108,7 @@ export default function SignInPage() {
                     </CardHeader>
                     <CardContent className="space-y-6">
                         {/* GitHub Sign In */}
-                        {availableProviders?.github && (
+                        {Boolean(availableProviders?.github) && (
                             <Button
                                 onClick={handleGitHubSignIn}
                                 className="w-full"
@@ -128,7 +129,7 @@ export default function SignInPage() {
                         </div>
 
                         {/* Email Sign In */}
-                        {availableProviders?.email && (
+                        {Boolean(availableProviders?.email) && (
                             <form onSubmit={handleEmailSignIn} className="space-y-4">
                                 <div>
                                     <Label htmlFor="email">Email Address</Label>
