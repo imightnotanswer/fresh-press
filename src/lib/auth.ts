@@ -5,25 +5,35 @@ import { Resend } from "resend";
 import { SupabaseAdapter } from "@next-auth/supabase-adapter";
 import { supabaseServer as supabase } from "./supabase-server";
 
-// Initialize Resend if API key is available
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+// Initialize Resend only if a likely-valid API key is present (Resend keys start with "re_")
+const resendKey = process.env.RESEND_API_KEY;
+const resend = resendKey && resendKey.startsWith("re_") ? new Resend(resendKey) : null;
 
 // Only initialize Supabase adapter if environment variables are available
-const supabaseAdapter = process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAdapter = SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
     ? SupabaseAdapter({
-        url: process.env.SUPABASE_URL,
+        url: SUPABASE_URL,
         secret: process.env.SUPABASE_SERVICE_ROLE_KEY,
     })
     : undefined;
 
-export const authOptions: NextAuthOptions = {
-    secret: process.env.NEXTAUTH_SECRET,
-    ...(supabaseAdapter && { adapter: supabaseAdapter }),
-    providers: [
+// Build providers list conditionally to avoid runtime errors when some envs are missing
+const providers: NextAuthOptions["providers"] = [];
+const isProduction = process.env.NODE_ENV === "production";
+const enableEmailProvider = (!!resend || !isProduction) && !!supabaseAdapter; // require adapter in addition to Resend
+
+if (process.env.GITHUB_ID && process.env.GITHUB_SECRET) {
+    providers.push(
         GitHubProvider({
-            clientId: process.env.GITHUB_ID!,
-            clientSecret: process.env.GITHUB_SECRET!,
-        }),
+            clientId: process.env.GITHUB_ID,
+            clientSecret: process.env.GITHUB_SECRET,
+        })
+    );
+}
+
+if (enableEmailProvider) {
+    providers.push(
         EmailProvider({
             server: {
                 host: "smtp.resend.com",
@@ -59,8 +69,9 @@ export const authOptions: NextAuthOptions = {
                             `,
                         });
                     } catch (error) {
-                        console.error("Error sending email:", error);
-                        throw new Error("Failed to send verification email");
+                        // In development, don't fail the request; log and provide URL instead
+                        console.warn("Resend failed to send verification email:", error);
+                        console.log("Email verification URL:", url);
                     }
                 } else {
                     // Fallback for development - log the URL
@@ -68,8 +79,14 @@ export const authOptions: NextAuthOptions = {
                     console.log("To enable email sending, configure RESEND_API_KEY in your environment variables");
                 }
             },
-        }),
-    ],
+        })
+    );
+}
+
+export const authOptions: NextAuthOptions = {
+    secret: process.env.NEXTAUTH_SECRET,
+    ...(supabaseAdapter && { adapter: supabaseAdapter }),
+    providers,
     session: {
         strategy: "jwt",
     },

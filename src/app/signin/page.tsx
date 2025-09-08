@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { signIn, getProviders } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,11 @@ export default function SignInPage() {
     const [email, setEmail] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [emailSent, setEmailSent] = useState(false);
+    const [availableProviders, setAvailableProviders] = useState<Record<string, unknown> | null>(null);
+
+    useEffect(() => {
+        getProviders().then(setAvailableProviders).catch(() => setAvailableProviders({}));
+    }, []);
 
     const handleEmailSignIn = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -102,14 +107,16 @@ export default function SignInPage() {
                     </CardHeader>
                     <CardContent className="space-y-6">
                         {/* GitHub Sign In */}
-                        <Button
-                            onClick={handleGitHubSignIn}
-                            className="w-full"
-                            variant="outline"
-                        >
-                            <Github className="h-5 w-5 mr-2" />
-                            Continue with GitHub
-                        </Button>
+                        {availableProviders?.github && (
+                            <Button
+                                onClick={handleGitHubSignIn}
+                                className="w-full"
+                                variant="outline"
+                            >
+                                <Github className="h-5 w-5 mr-2" />
+                                Continue with GitHub
+                            </Button>
+                        )}
 
                         <div className="relative">
                             <div className="absolute inset-0 flex items-center">
@@ -121,27 +128,29 @@ export default function SignInPage() {
                         </div>
 
                         {/* Email Sign In */}
-                        <form onSubmit={handleEmailSignIn} className="space-y-4">
-                            <div>
-                                <Label htmlFor="email">Email Address</Label>
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    placeholder="Enter your email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    required
-                                />
-                            </div>
-                            <Button
-                                type="submit"
-                                className="w-full"
-                                disabled={isLoading || !email}
-                            >
-                                <Mail className="h-5 w-5 mr-2" />
-                                {isLoading ? "Sending..." : "Continue with Email"}
-                            </Button>
-                        </form>
+                        {availableProviders?.email && (
+                            <form onSubmit={handleEmailSignIn} className="space-y-4">
+                                <div>
+                                    <Label htmlFor="email">Email Address</Label>
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        placeholder="Enter your email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                                <Button
+                                    type="submit"
+                                    className="w-full"
+                                    disabled={isLoading || !email}
+                                >
+                                    <Mail className="h-5 w-5 mr-2" />
+                                    {isLoading ? "Sending..." : "Continue with Email"}
+                                </Button>
+                            </form>
+                        )}
 
                         <div className="text-center">
                             <p className="text-xs text-gray-500">
