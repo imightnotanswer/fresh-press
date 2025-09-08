@@ -20,21 +20,23 @@ export default function VideoPlayer({
     height = "100%",
     controls = true,
 }: Props) {
+    console.log('VideoPlayer props:', { url, width, height, controls });
+    
     return (
         <div className="relative aspect-video">
             <ReactPlayerDynamic
-                // @ts-expect-error - ReactPlayer dynamic import typing issue
                 url={url}
                 width={width}
                 height={height}
                 controls={controls}
+                onReady={() => console.log('ReactPlayer ready')}
+                onError={(error) => console.error('ReactPlayer error:', error)}
+                onStart={() => console.log('Video started')}
                 config={{ 
                     youtube: {
                         playerVars: {
                             modestbranding: 1,
-                            rel: 0,
-                            showinfo: 0,
-                            playsinline: 1
+                            rel: 0
                         }
                     },
                     vimeo: { 
