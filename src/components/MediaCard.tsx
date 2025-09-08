@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Play } from "lucide-react";
 import { useState, useCallback, useRef } from "react";
-import { getYouTubeThumbnail, isYouTubeUrl, isVimeoUrl, getVimeoThumbnail } from "@/lib/youtube";
+import { getYouTubeThumbnail, isYouTubeUrl, isVimeoUrl, getVimeoThumbnail, getYouTubeId } from "@/lib/youtube";
 import { useRouter } from "next/navigation";
 
 const ReactPlayerDynamic = dynamic<any>(() => import("react-player"), { ssr: false });
