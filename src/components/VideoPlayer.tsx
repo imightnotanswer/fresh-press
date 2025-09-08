@@ -1,7 +1,6 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState } from "react";
 import { getYouTubeId, isYouTubeUrl } from "@/lib/youtube";
 
 const ReactPlayerDynamic = dynamic<any>(() => import("react-player"), {
@@ -72,35 +71,40 @@ export default function VideoPlayer({
         }
     })();
 
-    // Autoplay across navigation is often blocked unless muted.
-    // Start muted to guarantee autoplay, then let user unmute with one tap.
-    const [isMuted, setIsMuted] = useState(true);
-
-    const resumeVolume = typeof initialVolume === 'number' ? initialVolume : 1;
+    // If YouTube, prefer using the official embed URL which is very reliable
+    const youtubeEmbedUrl = (() => {
+        const id = getYouTubeId(normalizedUrl);
+        if (!id) return null;
+        const params = new URLSearchParams();
+        if (startSeconds > 0) params.set('start', String(startSeconds));
+        const qs = params.toString();
+        return `https://www.youtube.com/embed/${id}${qs ? `?${qs}` : ''}`;
+    })();
 
     return (
         <div className="relative aspect-video">
-            <ReactPlayerDynamic
-                url={normalizedUrl}
-                width={width}
-                height={height}
-                controls={controls}
-                playing
-                muted={isMuted}
-                volume={isMuted ? 0 : resumeVolume}
-                config={{ youtube: { playerVars: startSeconds > 0 ? { start: startSeconds, playsinline: 1 } : { playsinline: 1 } } }}
-                onReady={() => console.log('ReactPlayer ready')}
-                onError={(error: unknown) => console.error('ReactPlayer error:', error)}
-                onStart={() => console.log('Video started')}
-            />
-            {isMuted && (
-                <button
-                    type="button"
-                    onClick={() => setIsMuted(false)}
-                    className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 rounded-full bg-black/70 text-white text-sm px-4 py-2 backdrop-blur hover:bg-black/80"
-                >
-                    Tap to unmute
-                </button>
+            {youtubeEmbedUrl ? (
+                <iframe
+                    src={youtubeEmbedUrl}
+                    width={width}
+                    height={height}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                    className="w-full h-full rounded"
+                    title="YouTube video player"
+                />
+            ) : (
+                <ReactPlayerDynamic
+                    url={normalizedUrl}
+                    width={width}
+                    height={height}
+                    controls={controls}
+                    volume={initialVolume}
+                    config={{ youtube: { playerVars: startSeconds > 0 ? { start: startSeconds } : {} } }}
+                    onReady={() => console.log('ReactPlayer ready')}
+                    onError={(error: unknown) => console.error('ReactPlayer error:', error)}
+                    onStart={() => console.log('Video started')}
+                />
             )}
         </div>
     );

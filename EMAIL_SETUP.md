@@ -56,3 +56,6 @@ If you don't want to set up Resend right now, the system will:
 - **"Failed to send verification email"**: Check your RESEND_API_KEY
 - **"Invalid from address"**: Make sure EMAIL_FROM matches your verified domain
 - **No email received**: Check spam folder, verify domain setup
+
+
+
