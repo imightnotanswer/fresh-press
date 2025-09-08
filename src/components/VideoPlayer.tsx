@@ -21,10 +21,11 @@ export default function VideoPlayer({
     controls = true,
 }: Props) {
     console.log('VideoPlayer props:', { url, width, height, controls });
-    
+
     return (
         <div className="relative aspect-video">
             <ReactPlayerDynamic
+                // @ts-expect-error - ReactPlayer dynamic import typing issue
                 url={url}
                 width={width}
                 height={height}
