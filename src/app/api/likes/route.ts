@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Missing postId or postType" }, { status: 400 });
         }
 
-        // Check if like already exists
+        // Prevent duplicate likes by same user
         const { data: existingLike } = await supabase
             .from("likes")
             .select("id")
@@ -32,7 +32,6 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Already liked" }, { status: 400 });
         }
 
-        // Add like
         const { data, error } = await supabase
             .from("likes")
             .insert({
@@ -62,16 +61,16 @@ export async function DELETE(request: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        if (!supabase) {
+            return NextResponse.json({ error: "Database not configured" }, { status: 503 });
+        }
+
         const { searchParams } = new URL(request.url);
         const postId = searchParams.get("postId");
         const postType = searchParams.get("postType");
 
         if (!postId || !postType) {
             return NextResponse.json({ error: "Missing postId or postType" }, { status: 400 });
-        }
-
-        if (!supabase) {
-            return NextResponse.json({ error: "Database not configured" }, { status: 503 });
         }
 
         const { error } = await supabase
@@ -95,11 +94,6 @@ export async function DELETE(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
     try {
-        const session = await getServerSession(authOptions);
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-
         if (!supabase) {
             return NextResponse.json({ error: "Database not configured" }, { status: 503 });
         }
@@ -107,9 +101,29 @@ export async function GET(request: NextRequest) {
         const { searchParams } = new URL(request.url);
         const postId = searchParams.get("postId");
         const postType = searchParams.get("postType");
+        const countOnly = searchParams.get("count");
+
+        if (countOnly && postId && postType) {
+            const { count, error } = await supabase
+                .from("likes")
+                .select("id", { count: "exact", head: true })
+                .eq("post_id", postId)
+                .eq("post_type", postType);
+
+            if (error) {
+                console.error("Error counting likes:", error);
+                return NextResponse.json({ error: "Failed to count likes" }, { status: 500 });
+            }
+
+            return NextResponse.json({ count: count ?? 0 });
+        }
+
+        const session = await getServerSession(authOptions);
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
 
         if (postId && postType) {
-            // Check if user has liked this specific post
             const { data, error } = await supabase
                 .from("likes")
                 .select("id")
@@ -118,29 +132,31 @@ export async function GET(request: NextRequest) {
                 .eq("post_type", postType)
                 .single();
 
-            if (error && error.code !== 'PGRST116') {
+            if (error && (error as any).code !== 'PGRST116') {
                 console.error("Error checking like:", error);
                 return NextResponse.json({ error: "Failed to check like" }, { status: 500 });
             }
 
             return NextResponse.json({ liked: !!data });
-        } else {
-            // Get all user's liked posts
-            const { data, error } = await supabase
-                .from("likes")
-                .select("post_id, post_type, created_at")
-                .eq("user_id", session.user.id)
-                .order("created_at", { ascending: false });
-
-            if (error) {
-                console.error("Error fetching likes:", error);
-                return NextResponse.json({ error: "Failed to fetch likes" }, { status: 500 });
-            }
-
-            return NextResponse.json(data);
         }
+
+        // Get all likes for current user
+        const { data, error } = await supabase
+            .from("likes")
+            .select("post_id, post_type, created_at")
+            .eq("user_id", session.user.id)
+            .order("created_at", { ascending: false });
+
+        if (error) {
+            console.error("Error fetching likes:", error);
+            return NextResponse.json({ error: "Failed to fetch likes" }, { status: 500 });
+        }
+
+        return NextResponse.json(data);
     } catch (error) {
         console.error("Error in likes GET API:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }
 }
+
+

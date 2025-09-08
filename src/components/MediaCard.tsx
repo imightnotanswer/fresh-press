@@ -8,6 +8,7 @@ import { Play } from "lucide-react";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { getYouTubeThumbnail, isYouTubeUrl, isVimeoUrl, getVimeoThumbnail, getYouTubeId } from "@/lib/youtube";
 import { useRouter } from "next/navigation";
+import LikeButton from "./LikeButton";
 
 const ReactPlayerDynamic = dynamic<any>(() => import("react-player"), { ssr: false });
 
@@ -200,13 +201,18 @@ export default function MediaCard({ media }: MediaCardProps) {
                         {media.description && (
                             <p className="cutting-edge-blurb line-clamp-3">{media.description}</p>
                         )}
-                        <p className="cutting-edge-date">
-                            {new Date(media.publishedAt).toLocaleDateString('en-US', {
-                                month: 'numeric',
-                                day: 'numeric',
-                                year: 'numeric'
-                            })}
-                        </p>
+                        <div className="flex items-center justify-between">
+                            <p className="cutting-edge-date">
+                                {new Date(media.publishedAt).toLocaleDateString('en-US', {
+                                    month: 'numeric',
+                                    day: 'numeric',
+                                    year: 'numeric'
+                                })}
+                            </p>
+                            <div onClick={(e) => e.preventDefault()}>
+                                <LikeButton postId={media._id} postType="media" showCount />
+                            </div>
+                        </div>
                     </div>
                 </div>
             </Link>

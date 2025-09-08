@@ -10,18 +10,23 @@ interface LikeButtonProps {
     postType: "review" | "media";
     initialLiked?: boolean;
     onLikeChange?: (liked: boolean) => void;
+    showCount?: boolean;
 }
 
-export default function LikeButton({ postId, postType, initialLiked = false, onLikeChange }: LikeButtonProps) {
+export default function LikeButton({ postId, postType, initialLiked = false, onLikeChange, showCount = false }: LikeButtonProps) {
     const { data: session } = useSession();
     const [liked, setLiked] = useState(initialLiked);
     const [loading, setLoading] = useState(false);
+    const [count, setCount] = useState<number | null>(null);
 
     useEffect(() => {
         if (session?.user?.id) {
             checkLikeStatus();
         }
-    }, [session, postId, postType]);
+        if (showCount) {
+            fetchCount();
+        }
+    }, [session, postId, postType, showCount]);
 
     const checkLikeStatus = async () => {
         try {
@@ -32,6 +37,18 @@ export default function LikeButton({ postId, postType, initialLiked = false, onL
             }
         } catch (error) {
             console.error("Error checking like status:", error);
+        }
+    };
+
+    const fetchCount = async () => {
+        try {
+            const response = await fetch(`/api/likes?postId=${postId}&postType=${postType}&count=1`);
+            if (response.ok) {
+                const data = await response.json();
+                if (typeof data.count === 'number') setCount(data.count);
+            }
+        } catch (error) {
+            console.error("Error fetching like count:", error);
         }
     };
 
@@ -52,6 +69,7 @@ export default function LikeButton({ postId, postType, initialLiked = false, onL
                 if (response.ok) {
                     setLiked(false);
                     onLikeChange?.(false);
+                    if (showCount) fetchCount();
                 }
             } else {
                 // Like
@@ -68,6 +86,7 @@ export default function LikeButton({ postId, postType, initialLiked = false, onL
                 if (response.ok) {
                     setLiked(true);
                     onLikeChange?.(true);
+                    if (showCount) fetchCount();
                 }
             }
         } catch (error) {
@@ -104,6 +123,14 @@ export default function LikeButton({ postId, postType, initialLiked = false, onL
         >
             <Heart className={`h-4 w-4 ${liked ? "fill-current" : ""}`} />
             <span>{liked ? "Liked" : "Like"}</span>
+            {showCount && (
+                <span className="ml-1 text-xs rounded-full px-2 py-0.5 bg-gray-100 text-gray-600">
+                    {count ?? "–"}
+                </span>
+            )}
         </Button>
     );
 }
+
+
+
