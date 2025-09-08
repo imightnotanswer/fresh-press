@@ -71,41 +71,20 @@ export default function VideoPlayer({
         }
     })();
 
-    // If YouTube, prefer using the official embed URL which is very reliable
-    const youtubeEmbedUrl = (() => {
-        const id = getYouTubeId(normalizedUrl);
-        if (!id) return null;
-        const params = new URLSearchParams();
-        if (startSeconds > 0) params.set('start', String(startSeconds));
-        const qs = params.toString();
-        return `https://www.youtube.com/embed/${id}${qs ? `?${qs}` : ''}`;
-    })();
-
     return (
         <div className="relative aspect-video">
-            {youtubeEmbedUrl ? (
-                <iframe
-                    src={youtubeEmbedUrl}
-                    width={width}
-                    height={height}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen
-                    className="w-full h-full rounded"
-                    title="YouTube video player"
-                />
-            ) : (
-                <ReactPlayerDynamic
-                    url={normalizedUrl}
-                    width={width}
-                    height={height}
-                    controls={controls}
-                    volume={initialVolume}
-                    config={{ youtube: { playerVars: startSeconds > 0 ? { start: startSeconds } : {} } }}
-                    onReady={() => console.log('ReactPlayer ready')}
-                    onError={(error: unknown) => console.error('ReactPlayer error:', error)}
-                    onStart={() => console.log('Video started')}
-                />
-            )}
+            <ReactPlayerDynamic
+                url={normalizedUrl}
+                width={width}
+                height={height}
+                controls={controls}
+                playing
+                volume={initialVolume}
+                config={{ youtube: { playerVars: startSeconds > 0 ? { start: startSeconds, playsinline: 1 } : { playsinline: 1 } } }}
+                onReady={() => console.log('ReactPlayer ready')}
+                onError={(error: unknown) => console.error('ReactPlayer error:', error)}
+                onStart={() => console.log('Video started')}
+            />
         </div>
     );
 }
