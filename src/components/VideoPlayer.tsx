@@ -87,7 +87,7 @@ export default function VideoPlayer({
                     controls={controls}
                     config={{ youtube: { playerVars: startSeconds > 0 ? { start: startSeconds } : {} } }}
                     onReady={() => console.log('ReactPlayer ready')}
-                    onError={(error) => console.error('ReactPlayer error:', error)}
+                    onError={(error: unknown) => console.error('ReactPlayer error:', error)}
                     onStart={() => console.log('Video started')}
                 />
             )}
