@@ -102,7 +102,7 @@ export default function ReviewsPage() {
             <Navigation />
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                <div className="mb-8">
+                <div className="mb-8 text-center md:text-left">
                     <h1 className="cutting-edge-section-title">Reviews</h1>
                     <p className="cutting-edge-section-subtitle">Music reviews and critiques</p>
                 </div>
@@ -128,7 +128,7 @@ export default function ReviewsPage() {
                         </p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 gap-4 place-items-center sm:gap-5 md:grid-cols-2 md:gap-6 lg:grid-cols-3 xl:grid-cols-4">
                         {reviews.map((review: any) => (
                             <ReviewCard key={review._id} review={review} />
                         ))}
