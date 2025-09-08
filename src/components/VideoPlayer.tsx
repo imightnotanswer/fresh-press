@@ -21,7 +21,7 @@ export default function VideoPlayer({
     controls = true,
 }: Props) {
     console.log('VideoPlayer props:', { url, width, height, controls });
-    
+
     return (
         <div className="relative aspect-video">
             <ReactPlayerDynamic
@@ -34,10 +34,8 @@ export default function VideoPlayer({
                 onStart={() => console.log('Video started')}
                 config={{ 
                     youtube: {
-                        playerVars: {
-                            modestbranding: 1,
-                            rel: 0
-                        }
+                        modestbranding: 1,
+                        rel: 0
                     },
                     vimeo: { 
                         responsive: true 
