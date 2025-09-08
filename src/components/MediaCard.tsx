@@ -3,14 +3,13 @@
 import Link from "next/link";
 import Image from "next/image";
 import dynamic from "next/dynamic";
-import type { ReactPlayerProps } from "react-player";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Play } from "lucide-react";
 import { useState, useCallback } from "react";
 import { getYouTubeThumbnail, isYouTubeUrl, isVimeoUrl, getVimeoThumbnail } from "@/lib/youtube";
 import { useRouter } from "next/navigation";
 
-const ReactPlayerDynamic = dynamic<ReactPlayerProps>(() => import("react-player"), { ssr: false });
+const ReactPlayerDynamic = dynamic<any>(() => import("react-player"), { ssr: false });
 
 interface MediaCardProps {
     media: {
