@@ -7,6 +7,8 @@ import AuthButton from "@/components/AuthButton";
 import Navigation from "@/components/Navigation";
 import VideoPlayer from "@/components/VideoPlayer";
 import Image from "next/image";
+import { PlayerSlot } from "@/components/video/PlayerSlot";
+import { useYoutubePlayer } from "@/components/video/YoutubePlayerProvider";
 import { getYouTubeId } from "@/lib/youtube";
 import LikeButton from "@/components/LikeButton";
 
@@ -58,21 +60,11 @@ export default async function MediaPage({ params, searchParams }: MediaPageProps
 
             <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="space-y-8">
-                    {/* Prefer native YouTube iframe for YouTube URLs */}
+                    {/* Dock the persistent YouTube iframe if available; fallback to standard player */}
                     {media.videoUrl && (
                         <div className="bg-black rounded-lg overflow-hidden">
                             {getYouTubeId(media.videoUrl) ? (
-                                <div className="relative aspect-video">
-                                    <iframe
-                                        src={`https://www.youtube.com/embed/${getYouTubeId(media.videoUrl)}${tParam ? `?start=${encodeURIComponent(String(tParam))}` : ''}`}
-                                        width="100%"
-                                        height="100%"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                        allowFullScreen
-                                        className="w-full h-full"
-                                        title="YouTube video player"
-                                    />
-                                </div>
+                                <PlayerSlot className="relative aspect-video" />
                             ) : (
                                 <VideoPlayer url={playerUrl} />
                             )}
