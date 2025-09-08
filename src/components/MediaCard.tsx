@@ -133,6 +133,14 @@ export default function MediaCard({ media }: MediaCardProps) {
                             muted
                             controls
                             config={{ youtube: { playerVars: { playsinline: 1 } } }}
+                            onReady={() => {
+                                try {
+                                    const internal = playerRef.current?.getInternalPlayer?.();
+                                    if (internal && typeof internal.playVideo === 'function') {
+                                        internal.playVideo();
+                                    }
+                                } catch {}
+                            }}
                             onProgress={(state: any) => {
                                 if (typeof state.playedSeconds === 'number') setPlayedSeconds(state.playedSeconds);
                             }}
