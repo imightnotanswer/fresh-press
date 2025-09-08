@@ -65,39 +65,34 @@ export default function MediaCard({ media }: MediaCardProps) {
         setIsPlayingInline(true);
     }, [hasVideo]);
 
-    const handleCardClick = useCallback((e: React.MouseEvent) => {
-        // When playing inline, carry progress and volume to detail page as ?t=seconds&v=volumePercent
+    const buildDetailHref = useCallback(() => {
         let time = playedSeconds;
         try {
             if (playerRef.current?.getCurrentTime) {
                 const t = playerRef.current.getCurrentTime();
                 if (typeof t === 'number' && !Number.isNaN(t)) time = t;
             }
-        } catch {}
+        } catch { }
 
         let volumePercent = 100;
         try {
             const internal = playerRef.current?.getInternalPlayer?.();
-            // YouTube Iframe API returns 0-100
             if (internal?.getVolume) {
                 const vol = internal.getVolume();
                 if (typeof vol === 'number') volumePercent = Math.max(0, Math.min(100, Math.floor(vol)));
             }
-        } catch {}
+        } catch { }
 
         const params: string[] = [];
         if (time > 0) params.push(`t=${Math.floor(time)}`);
         if (volumePercent !== 100) params.push(`v=${volumePercent}`);
         const qs = params.length ? `?${params.join('&')}` : '';
-        const href = `/media/${media.slug.current}${qs}`;
-        e.preventDefault();
-        router.push(href);
-    }, [media.slug.current, playedSeconds, router]);
+        return `/media/${media.slug.current}${qs}`;
+    }, [media.slug.current, playedSeconds]);
 
     return (
         <div className="cutting-edge-card">
-            <Link href={`/media/${media.slug.current}`} onClick={handleCardClick}>
-                <div className="aspect-video relative bg-gray-100 group overflow-hidden">
+            <div className="aspect-video relative bg-gray-100 group overflow-hidden">
                     {thumbnailUrl ? (
                         <Image
                             src={thumbnailUrl}
@@ -143,7 +138,8 @@ export default function MediaCard({ media }: MediaCardProps) {
                             />
                         </div>
                     )}
-                </div>
+            </div>
+            <Link href={buildDetailHref()}>
                 <div className="p-4">
                     <div className="space-y-3">
                         <h3 className="cutting-edge-title line-clamp-2">{media.title}</h3>
