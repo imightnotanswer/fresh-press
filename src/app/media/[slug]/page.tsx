@@ -6,6 +6,7 @@ import Comments from "@/components/Comments";
 import AuthButton from "@/components/AuthButton";
 import Navigation from "@/components/Navigation";
 import VideoPlayer from "@/components/VideoPlayer";
+import { getYouTubeId } from "@/lib/youtube";
 
 interface MediaPageProps {
     params: Promise<{ slug: string }>;
@@ -34,11 +35,6 @@ export default async function MediaPage({ params }: MediaPageProps) {
     }
 
     // Extract YouTube ID from URL if it's a YouTube video
-    const getYouTubeId = (url: string) => {
-        const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/);
-        return match ? match[1] : null;
-    };
-
     const youtubeId = media.videoUrl ? getYouTubeId(media.videoUrl) : null;
     const playerUrl = youtubeId
         ? `https://www.youtube-nocookie.com/watch?v=${youtubeId}&rel=0&modestbranding=1&playsinline=1`
