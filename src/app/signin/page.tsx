@@ -226,6 +226,9 @@ export default function SignInPage() {
                             <p className="text-sm">
                                 New here? <Link className="text-blue-600 hover:underline" href="/signup">Create an account</Link>
                             </p>
+                            <p className="text-sm">
+                                <Link className="text-blue-600 hover:underline" href="/forgot-password">Forgot password?</Link>
+                            </p>
                         </div>
                     </CardContent>
                 </Card>
