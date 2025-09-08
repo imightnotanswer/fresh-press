@@ -12,8 +12,8 @@ import { getYouTubeId } from "@/lib/youtube";
 import LikeButton from "@/components/LikeButton";
 
 interface MediaPageProps {
-    params: { slug: string };
-    searchParams?: { [key: string]: string | string[] | undefined };
+    params: Promise<{ slug: string }>;
+    searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 async function getMedia(slug: string) {
@@ -31,8 +31,8 @@ async function getMedia(slug: string) {
 }
 
 export default async function MediaPage({ params, searchParams }: MediaPageProps) {
-    const { slug } = params;
-    const sp = searchParams;
+    const { slug } = await params;
+    const sp = searchParams ? await searchParams : undefined;
     const media = await getMedia(slug);
 
     if (!media) {
