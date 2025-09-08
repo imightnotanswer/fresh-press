@@ -104,7 +104,6 @@ export default function MediaCard({ media }: MediaCardProps) {
 
                     {hasVideo && isPlayingInline && (
                         <div className="absolute inset-0">
-                            {/* @ts-expect-error dynamic import typing */}
                             <ReactPlayerDynamic
                                 url={media.videoUrl}
                                 width="100%"
