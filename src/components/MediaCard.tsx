@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Play } from "lucide-react";
 import { useState, useCallback } from "react";
-import { getYouTubeThumbnail, isYouTubeUrl, isVimeoUrl, getVimeoThumbnail } from "@/lib/youtube";
+import { getYouTubeThumbnail, isYouTubeUrl, isVimeoUrl, getVimeoThumbnail, getYouTubeId } from "@/lib/youtube";
 import { useRouter } from "next/navigation";
 
 const ReactPlayerDynamic = dynamic<any>(() => import("react-player"), { ssr: false });
@@ -103,19 +103,32 @@ export default function MediaCard({ media }: MediaCardProps) {
                     )}
 
                     {hasVideo && isPlayingInline && (
-                        <div className="absolute inset-0">
-                            <ReactPlayerDynamic
-                                url={media.videoUrl}
-                                width="100%"
-                                height="100%"
-                                playing
-                                controls
-                                muted
-                                onProgress={(state: any) => {
-                                    if (typeof state.playedSeconds === 'number') setPlayedSeconds(state.playedSeconds);
-                                }}
-                                onError={(e: any) => setInlineError('Playback error')}
-                            />
+                        <div className="absolute inset-0 z-10">
+                            {isYouTubeUrl(media.videoUrl) && getYouTubeId(media.videoUrl) ? (
+                                <iframe
+                                    src={`https://www.youtube.com/embed/${getYouTubeId(media.videoUrl)}?autoplay=1&mute=1&playsinline=1`}
+                                    width="100%"
+                                    height="100%"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                    allowFullScreen
+                                    className="w-full h-full rounded"
+                                    title="Inline YouTube video"
+                                />
+                            ) : (
+                                // Fallback to ReactPlayer for non-YouTube URLs
+                                <ReactPlayerDynamic
+                                    url={media.videoUrl}
+                                    width="100%"
+                                    height="100%"
+                                    playing
+                                    controls
+                                    muted
+                                    onProgress={(state: any) => {
+                                        if (typeof state.playedSeconds === 'number') setPlayedSeconds(state.playedSeconds);
+                                    }}
+                                    onError={(e: unknown) => setInlineError('Playback error')}
+                                />
+                            )}
                         </div>
                     )}
                 </div>
