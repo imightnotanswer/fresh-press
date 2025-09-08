@@ -190,6 +190,14 @@ export default function MediaCard({ media }: MediaCardProps) {
                                 onError={(e: unknown) => setInlineError('Playback error')}
                             />
                         )}
+                        {/* Expand to full post, preserving time/volume */}
+                        <button
+                            type="button"
+                            onClick={() => router.push(buildDetailHref())}
+                            className="absolute top-2 right-2 z-20 rounded-full bg-black/60 text-white px-3 py-1 text-xs backdrop-blur hover:bg-black/70"
+                        >
+                            Continue →
+                        </button>
                     </div>
                 )}
             </div>
