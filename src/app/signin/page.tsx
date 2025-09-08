@@ -12,6 +12,7 @@ import Link from "next/link";
 
 export default function SignInPage() {
     const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [emailSent, setEmailSent] = useState(false);
     const [availableProviders, setAvailableProviders] = useState<Record<string, ClientSafeProvider> | null>(null);
@@ -49,6 +50,26 @@ export default function SignInPage() {
 
     const handleGoogleSignIn = () => {
         signIn("google", { callbackUrl: "/" });
+    };
+
+    const handleCredentialsSignIn = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsLoading(true);
+        try {
+            const res = await signIn("credentials", {
+                email,
+                password,
+                redirect: true,
+                callbackUrl: "/",
+            });
+            if (!res?.ok && (res as any)?.error) {
+                console.error("Credentials sign in failed:", (res as any).error);
+            }
+        } catch (err) {
+            console.error("Error with credentials sign in:", err);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     if (emailSent) {
@@ -167,9 +188,43 @@ export default function SignInPage() {
                             </form>
                         )}
 
-                        <div className="text-center">
+                        {/* Credentials Sign In */}
+                        {Boolean(availableProviders?.credentials) && (
+                            <form onSubmit={handleCredentialsSignIn} className="space-y-4">
+                                <div>
+                                    <Label htmlFor="cred-email">Email</Label>
+                                    <Input
+                                        id="cred-email"
+                                        type="email"
+                                        placeholder="you@example.com"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <Label htmlFor="cred-password">Password</Label>
+                                    <Input
+                                        id="cred-password"
+                                        type="password"
+                                        placeholder="Your password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                                <Button type="submit" className="w-full" disabled={isLoading || !email || !password}>
+                                    {isLoading ? "Signing in..." : "Sign in with Password"}
+                                </Button>
+                            </form>
+                        )}
+
+                        <div className="text-center space-y-2">
                             <p className="text-xs text-gray-500">
                                 By signing in, you agree to our terms of service and privacy policy.
+                            </p>
+                            <p className="text-sm">
+                                New here? <Link className="text-blue-600 hover:underline" href="/signup">Create an account</Link>
                             </p>
                         </div>
                     </CardContent>
