@@ -124,28 +124,31 @@ export default function MediaCard({ media }: MediaCardProps) {
 
                 {hasVideo && isPlayingInline && (
                     <div className="absolute inset-0 z-10">
-                        <ReactPlayerDynamic
-                            ref={playerRef}
-                            url={inlineUrl as string}
-                            width="100%"
-                            height="100%"
-                            playing
-                            muted
-                            controls
-                            config={{ youtube: { playerVars: { playsinline: 1 } } }}
-                            onReady={() => {
-                                try {
-                                    const internal = playerRef.current?.getInternalPlayer?.();
-                                    if (internal && typeof internal.playVideo === 'function') {
-                                        internal.playVideo();
-                                    }
-                                } catch {}
-                            }}
-                            onProgress={(state: any) => {
-                                if (typeof state.playedSeconds === 'number') setPlayedSeconds(state.playedSeconds);
-                            }}
-                            onError={(e: unknown) => setInlineError('Playback error')}
-                        />
+                        {youTubeId ? (
+                            <iframe
+                                src={`https://www.youtube.com/embed/${youTubeId}?autoplay=1&mute=1&playsinline=1&controls=1&rel=0&modestbranding=1`}
+                                width="100%"
+                                height="100%"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                allowFullScreen
+                                className="w-full h-full rounded"
+                                title="Inline YouTube video"
+                            />
+                        ) : (
+                            <ReactPlayerDynamic
+                                ref={playerRef}
+                                url={media.videoUrl as string}
+                                width="100%"
+                                height="100%"
+                                playing
+                                muted
+                                controls
+                                onProgress={(state: any) => {
+                                    if (typeof state.playedSeconds === 'number') setPlayedSeconds(state.playedSeconds);
+                                }}
+                                onError={(e: unknown) => setInlineError('Playback error')}
+                            />
+                        )}
                     </div>
                 )}
             </div>
