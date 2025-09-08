@@ -6,8 +6,7 @@ import Comments from "@/components/Comments";
 import AuthButton from "@/components/AuthButton";
 import Navigation from "@/components/Navigation";
 import VideoPlayer from "@/components/VideoPlayer";
-import PlayerDock from "@/components/video/PlayerDock";
-import EnsurePlayerLoaded from "@/components/video/EnsurePlayerLoaded";
+import VideoPlayer from "@/components/VideoPlayer";
 import { getYouTubeId } from "@/lib/youtube";
 import LikeButton from "@/components/LikeButton";
 
@@ -62,9 +61,7 @@ export default async function MediaPage({ params, searchParams }: MediaPageProps
                     {/* Video Player using persistent dock */}
                     {media.videoUrl && (
                         <div className="bg-black rounded-lg overflow-hidden">
-                            <PlayerDock className="relative aspect-video" />
-                            {/* Ensure the global player has the correct URL; don't force autoplay */}
-                            <EnsurePlayerLoaded url={playerUrl} autoplay={false} />
+                            <VideoPlayer url={playerUrl} />
                         </div>
                     )}
 
