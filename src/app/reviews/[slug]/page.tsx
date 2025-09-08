@@ -9,6 +9,7 @@ import AuthButton from "@/components/AuthButton";
 import Navigation from "@/components/Navigation";
 import ReviewContent from "@/components/ReviewContent";
 import ClickableImage from "@/components/ClickableImage";
+import LikeButton from "@/components/LikeButton";
 
 
 interface ReviewPageProps {
@@ -80,7 +81,10 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
                         {/* Review Content */}
                         <div className="space-y-6">
                             <div>
-                                <h1 className="text-4xl font-bold text-gray-900 mb-2">{review.title}</h1>
+                                <div className="flex items-start justify-between gap-4">
+                                    <h1 className="text-4xl font-bold text-gray-900 mb-2">{review.title}</h1>
+                                    <LikeButton postId={review._id} postType="review" />
+                                </div>
                                 <p className="text-xl text-gray-600 mb-4">
                                     by{" "}
                                     <Link

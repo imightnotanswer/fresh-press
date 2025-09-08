@@ -7,6 +7,7 @@ import AuthButton from "@/components/AuthButton";
 import Navigation from "@/components/Navigation";
 import VideoPlayer from "@/components/VideoPlayer";
 import { getYouTubeId } from "@/lib/youtube";
+import LikeButton from "@/components/LikeButton";
 
 interface MediaPageProps {
     params: Promise<{ slug: string }>;
@@ -57,7 +58,10 @@ export default async function MediaPage({ params }: MediaPageProps) {
                     {/* Media Content */}
                     <div className="space-y-6">
                         <div>
-                            <h1 className="text-4xl font-bold text-gray-900 mb-2">{media.title}</h1>
+                            <div className="flex items-start justify-between gap-4">
+                                <h1 className="text-4xl font-bold text-gray-900 mb-2">{media.title}</h1>
+                                <LikeButton postId={media._id} postType="media" />
+                            </div>
                             <p className="text-xl text-gray-600 mb-4">
                                 by{" "}
                                 <Link
