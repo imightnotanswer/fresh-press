@@ -89,7 +89,7 @@ export default function MediaCard({ media }: MediaCardProps) {
 
         const params: string[] = [];
         if (time > 0) params.push(`t=${Math.floor(time)}`);
-        if (vol !== 100) params.push(`v=${vol}`);
+        if (vol !== 100) params.push(`vol=${vol}`);
         const qs = params.length ? `?${params.join('&')}` : '';
         return `/media/${media.slug.current}${qs}`;
     }, [media.slug.current, playedSeconds, volumePercent]);
@@ -152,9 +152,9 @@ export default function MediaCard({ media }: MediaCardProps) {
                 {hasVideo && !isPlayingInline && (
                     <button
                         type="button"
-                        onClick={handlePlayInline}
+                        onClick={() => router.push(buildDetailHref())}
                         className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center"
-                        aria-label="Play"
+                        aria-label="Open"
                     >
                         <div className="w-16 h-16 bg-white/90 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
                             <Play className="w-8 h-8 text-black ml-1" />
@@ -191,13 +191,7 @@ export default function MediaCard({ media }: MediaCardProps) {
                             />
                         )}
                         {/* Expand to full post, preserving time/volume */}
-                        <button
-                            type="button"
-                            onClick={() => router.push(buildDetailHref())}
-                            className="absolute top-2 right-2 z-20 rounded-full bg-black/60 text-white px-3 py-1 text-xs backdrop-blur hover:bg-black/70"
-                        >
-                            Continue →
-                        </button>
+                        
                     </div>
                 )}
             </div>

@@ -40,7 +40,7 @@ export default async function MediaPage({ params, searchParams }: MediaPageProps
     // Read search params (?t=, ?v=) directly and pass through to the player URL
     let playerUrl = media.videoUrl as string;
     const tParam = (sp?.["t"] as string | undefined) ?? undefined;
-    const vParam = (sp?.["v"] as string | undefined) ?? undefined;
+    const vParam = (sp?.["v"] as string | undefined) ?? (sp?.["vol"] as string | undefined) ?? undefined;
     if (tParam) {
         const sep = playerUrl.includes('?') ? '&' : '?';
         playerUrl = `${playerUrl}${sep}t=${encodeURIComponent(tParam)}`;
