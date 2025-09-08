@@ -46,14 +46,14 @@ export default async function Home() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="mb-16">
+        <div className="mb-16 text-center md:text-left">
           <h1 className="cutting-edge-section-title">Latest Music</h1>
           <p className="cutting-edge-section-subtitle">Reviews, videos, and more from the music world</p>
         </div>
 
         {/* Recent Reviews Section */}
         <section className="mb-20">
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-col items-center gap-3 mb-8 text-center md:flex-row md:items-center md:justify-between md:text-left">
             <div>
               <h2 className="cutting-edge-section-title">Recent Reviews</h2>
               <p className="cutting-edge-section-subtitle">Latest music reviews and critiques</p>
@@ -76,7 +76,7 @@ export default async function Home() {
               <p className="text-gray-600 text-lg">No reviews yet. Check back soon!</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 gap-4 place-items-center sm:gap-5 md:grid-cols-2 md:gap-6 lg:grid-cols-3 xl:grid-cols-4">
               {reviews.slice(0, 4).map((review: any) => (
                 <ReviewCard key={review._id} review={review} />
               ))}
@@ -86,7 +86,7 @@ export default async function Home() {
 
         {/* Recent Media Section */}
         <section>
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-col items-center gap-3 mb-8 text-center md:flex-row md:items-center md:justify-between md:text-left">
             <div>
               <h2 className="cutting-edge-section-title">Recent Media</h2>
               <p className="cutting-edge-section-subtitle">Latest videos, podcasts, and media content</p>
@@ -109,7 +109,7 @@ export default async function Home() {
               <p className="text-gray-600 text-lg">No media content yet. Check back soon!</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 gap-4 place-items-center sm:gap-5 md:grid-cols-2 md:gap-6 lg:grid-cols-3 xl:grid-cols-4">
               {media.slice(0, 4).map((mediaItem: any) => (
                 <MediaCard key={mediaItem._id} media={mediaItem} />
               ))}
