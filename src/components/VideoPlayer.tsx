@@ -38,10 +38,33 @@ export default function VideoPlayer({
         return url;
     })();
 
+    // Extract start time from either query (?t=) appended by MediaCard, or standard YouTube params
+    const startSeconds = (() => {
+        try {
+            const u = new URL(normalizedUrl);
+            const t = u.searchParams.get('t') || u.searchParams.get('start');
+            if (!t) return 0;
+            // support formats like "90" or "1m30s"
+            if (/^\d+$/.test(t)) return parseInt(t, 10);
+            const m = t.match(/(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?/);
+            if (!m) return 0;
+            const h = parseInt(m[1] || '0', 10);
+            const mnt = parseInt(m[2] || '0', 10);
+            const s = parseInt(m[3] || '0', 10);
+            return h * 3600 + mnt * 60 + s;
+        } catch {
+            return 0;
+        }
+    })();
+
     // If YouTube, prefer using the official embed URL which is very reliable
     const youtubeEmbedUrl = (() => {
         const id = getYouTubeId(normalizedUrl);
-        return id ? `https://www.youtube.com/embed/${id}` : null;
+        if (!id) return null;
+        const params = new URLSearchParams();
+        if (startSeconds > 0) params.set('start', String(startSeconds));
+        const qs = params.toString();
+        return `https://www.youtube.com/embed/${id}${qs ? `?${qs}` : ''}`;
     })();
 
     return (
@@ -63,6 +86,7 @@ export default function VideoPlayer({
                     width={width}
                     height={height}
                     controls={controls}
+                    config={{ youtube: { playerVars: startSeconds > 0 ? { start: startSeconds } : {} } }}
                     onReady={() => console.log('ReactPlayer ready')}
                     onError={(error) => console.error('ReactPlayer error:', error)}
                     onStart={() => console.log('Video started')}

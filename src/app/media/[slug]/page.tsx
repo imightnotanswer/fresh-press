@@ -6,6 +6,7 @@ import Comments from "@/components/Comments";
 import AuthButton from "@/components/AuthButton";
 import Navigation from "@/components/Navigation";
 import VideoPlayer from "@/components/VideoPlayer";
+import { getYouTubeId } from "@/lib/youtube";
 
 interface MediaPageProps {
     params: Promise<{ slug: string }>;
@@ -33,7 +34,10 @@ export default async function MediaPage({ params }: MediaPageProps) {
         notFound();
     }
 
-    // Use the original video URL directly - ReactPlayer handles YouTube URLs natively
+    // Support deep-link start time (?t=seconds)
+    // We cannot read search params in an async server component without passing via props.
+    // As a pragmatic approach, allow YouTube-style t param appended on the url itself by the card.
+    // VideoPlayer will normalize/handle embed; we only pass the original URL here.
     const playerUrl = media.videoUrl;
 
     return (

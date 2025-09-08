@@ -2,10 +2,14 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Play } from "lucide-react";
-import VideoPlayer from "./VideoPlayer";
+import { useState, useCallback } from "react";
 import { getYouTubeThumbnail, isYouTubeUrl, isVimeoUrl, getVimeoThumbnail } from "@/lib/youtube";
+import { useRouter } from "next/navigation";
+
+const ReactPlayerDynamic = dynamic(() => import("react-player"), { ssr: false });
 
 interface MediaCardProps {
     media: {
@@ -24,6 +28,11 @@ interface MediaCardProps {
 }
 
 export default function MediaCard({ media }: MediaCardProps) {
+    const router = useRouter();
+    const [isPlayingInline, setIsPlayingInline] = useState(false);
+    const [playedSeconds, setPlayedSeconds] = useState(0);
+    const [inlineError, setInlineError] = useState<string | null>(null);
+
     // Get thumbnail URL based on video type
     const getThumbnailUrl = () => {
         if (media.coverUrl) {
@@ -47,9 +56,23 @@ export default function MediaCard({ media }: MediaCardProps) {
     const thumbnailUrl = getThumbnailUrl();
     const hasVideo = !!media.videoUrl;
 
+    const handlePlayInline = useCallback((e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!hasVideo) return;
+        setIsPlayingInline(true);
+    }, [hasVideo]);
+
+    const handleCardClick = useCallback((e: React.MouseEvent) => {
+        // When playing inline, carry progress to detail page as ?t=seconds
+        const href = `/media/${media.slug.current}${playedSeconds > 0 ? `?t=${Math.floor(playedSeconds)}` : ''}`;
+        e.preventDefault();
+        router.push(href);
+    }, [media.slug.current, playedSeconds, router]);
+
     return (
         <div className="cutting-edge-card">
-            <Link href={`/media/${media.slug.current}`}>
+            <Link href={`/media/${media.slug.current}`} onClick={handleCardClick}>
                 <div className="aspect-video relative bg-gray-100 group overflow-hidden">
                     {thumbnailUrl ? (
                         <Image
@@ -60,17 +83,40 @@ export default function MediaCard({ media }: MediaCardProps) {
                         />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                            <div className="w-16 h-16 bg-black bg-opacity-20 rounded-full flex items-center justify-center group-hover:bg-opacity-30 transition-all">
+                            <div className="w-16 h-16 bg-black/20 rounded-full flex items-center justify-center group-hover:bg-black/30 transition-all">
                                 <Play className="w-8 h-8 text-black ml-1" />
                             </div>
                         </div>
                     )}
                     {/* Play overlay for video thumbnails */}
-                    {hasVideo && (
-                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center">
-                            <div className="w-16 h-16 bg-white bg-opacity-90 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
+                    {hasVideo && !isPlayingInline && (
+                        <button
+                            type="button"
+                            onClick={handlePlayInline}
+                            className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center"
+                            aria-label="Play"
+                        >
+                            <div className="w-16 h-16 bg-white/90 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
                                 <Play className="w-8 h-8 text-black ml-1" />
                             </div>
+                        </button>
+                    )}
+
+                    {hasVideo && isPlayingInline && (
+                        <div className="absolute inset-0">
+                            {/* @ts-expect-error dynamic import typing */}
+                            <ReactPlayerDynamic
+                                url={media.videoUrl}
+                                width="100%"
+                                height="100%"
+                                playing
+                                controls
+                                muted
+                                onProgress={(state: any) => {
+                                    if (typeof state.playedSeconds === 'number') setPlayedSeconds(state.playedSeconds);
+                                }}
+                                onError={(e: any) => setInlineError('Playback error')}
+                            />
                         </div>
                     )}
                 </div>
