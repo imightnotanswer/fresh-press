@@ -130,6 +130,7 @@ export default function MediaCard({ media }: MediaCardProps) {
                             width="100%"
                             height="100%"
                             playing
+                            muted
                             controls
                             config={{ youtube: { playerVars: { playsinline: 1 } } }}
                             onProgress={(state: any) => {
