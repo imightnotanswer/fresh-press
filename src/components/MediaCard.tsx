@@ -55,6 +55,7 @@ export default function MediaCard({ media }: MediaCardProps) {
 
     const thumbnailUrl = getThumbnailUrl();
     const hasVideo = !!media.videoUrl;
+    const youTubeId = isYouTubeUrl(media.videoUrl || '') ? getYouTubeId(media.videoUrl || '') : null;
 
     const handlePlayInline = useCallback((e: React.MouseEvent) => {
         e.preventDefault();
@@ -104,9 +105,9 @@ export default function MediaCard({ media }: MediaCardProps) {
 
                     {hasVideo && isPlayingInline && (
                         <div className="absolute inset-0 z-10">
-                            {isYouTubeUrl(media.videoUrl) && getYouTubeId(media.videoUrl) ? (
+                            {youTubeId ? (
                                 <iframe
-                                    src={`https://www.youtube.com/embed/${getYouTubeId(media.videoUrl)}?autoplay=1&mute=1&playsinline=1`}
+                                    src={`https://www.youtube.com/embed/${youTubeId}?autoplay=1&mute=1&playsinline=1`}
                                     width="100%"
                                     height="100%"
                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
