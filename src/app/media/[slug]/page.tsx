@@ -34,11 +34,8 @@ export default async function MediaPage({ params }: MediaPageProps) {
         notFound();
     }
 
-    // Extract YouTube ID from URL if it's a YouTube video
-    const youtubeId = media.videoUrl ? getYouTubeId(media.videoUrl) : null;
-    const playerUrl = youtubeId
-        ? `https://www.youtube-nocookie.com/watch?v=${youtubeId}&rel=0&modestbranding=1&playsinline=1`
-        : media.videoUrl;
+    // Use the original video URL directly - ReactPlayer handles YouTube URLs natively
+    const playerUrl = media.videoUrl;
 
     return (
         <div className="min-h-screen bg-gray-50">

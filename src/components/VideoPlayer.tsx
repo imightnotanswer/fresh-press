@@ -28,7 +28,19 @@ export default function VideoPlayer({
                 width={width}
                 height={height}
                 controls={controls}
-                config={{ vimeo: { responsive: true } }}
+                config={{ 
+                    youtube: {
+                        playerVars: {
+                            modestbranding: 1,
+                            rel: 0,
+                            showinfo: 0,
+                            playsinline: 1
+                        }
+                    },
+                    vimeo: { 
+                        responsive: true 
+                    } 
+                }}
             />
         </div>
     );

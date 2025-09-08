@@ -26,13 +26,6 @@ interface MediaCardProps {
 export default function MediaCard({ media }: MediaCardProps) {
     // Get thumbnail URL based on video type
     const getThumbnailUrl = () => {
-        console.log('MediaCard debug:', {
-            coverUrl: media.coverUrl,
-            videoUrl: media.videoUrl,
-            isYouTube: media.videoUrl ? isYouTubeUrl(media.videoUrl) : false,
-            youtubeThumbnail: media.videoUrl ? getYouTubeThumbnail(media.videoUrl, 'high') : null
-        });
-        
         if (media.coverUrl) {
             // Use uploaded cover image if available
             return media.coverUrl;
