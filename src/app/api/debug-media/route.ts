@@ -9,7 +9,7 @@ export async function GET() {
         }
 
         const media = await sanity.fetch(ALL_MEDIA);
-        
+
         return NextResponse.json({
             count: media?.length || 0,
             media: media || [],

@@ -30,7 +30,7 @@ export default function MediaCard({ media }: MediaCardProps) {
             // Use uploaded cover image if available
             return media.coverUrl;
         }
-        
+
         if (media.videoUrl) {
             if (isYouTubeUrl(media.videoUrl)) {
                 // Use YouTube thumbnail
@@ -40,7 +40,7 @@ export default function MediaCard({ media }: MediaCardProps) {
                 return getVimeoThumbnail(media.videoUrl);
             }
         }
-        
+
         return null;
     };
 

@@ -6,18 +6,18 @@ export default defineType({
     fields: [
         defineField({ name: "title", type: "string", validation: r => r.required() }),
         defineField({ name: "artist", type: "reference", to: [{ type: "artist" }], validation: r => r.required() }),
-        defineField({ 
-            name: "cover", 
-            type: "image", 
+        defineField({
+            name: "cover",
+            type: "image",
             title: "Cover Image",
             options: { hotspot: true },
             fields: [
                 { name: "alt", type: "string", title: "Alternative text" }
             ]
         }),
-        defineField({ 
-            name: "videoUrl", 
-            type: "url", 
+        defineField({
+            name: "videoUrl",
+            type: "url",
             title: "Video URL",
             description: "YouTube, Vimeo, or direct video URL"
         }),
