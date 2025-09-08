@@ -90,3 +90,15 @@ CREATE POLICY "NextAuth can manage users" ON users
 
 CREATE POLICY "NextAuth can manage verification tokens" ON verification_tokens
   FOR ALL USING (true);
+
+-- Credentials support: store password hashes
+CREATE TABLE IF NOT EXISTS user_credentials (
+  user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  password_hash TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE user_credentials ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Manage own credentials" ON user_credentials;
+CREATE POLICY "Manage own credentials" ON user_credentials
+  FOR ALL USING (auth.uid()::text = user_id::text);

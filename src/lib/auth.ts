@@ -1,5 +1,8 @@
 import { NextAuthOptions } from "next-auth";
 import GitHubProvider from "next-auth/providers/github";
+import GoogleProvider from "next-auth/providers/google";
+import CredentialsProvider from "next-auth/providers/credentials";
+import bcrypt from "bcryptjs";
 import EmailProvider from "next-auth/providers/email";
 import { Resend } from "resend";
 import { SupabaseAdapter } from "@next-auth/supabase-adapter";
@@ -34,6 +37,15 @@ if (process.env.GITHUB_ID && process.env.GITHUB_SECRET) {
         GitHubProvider({
             clientId: process.env.GITHUB_ID,
             clientSecret: process.env.GITHUB_SECRET,
+        })
+    );
+}
+
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+    providers.push(
+        GoogleProvider({
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
         })
     );
 }
@@ -109,6 +121,46 @@ if (enableEmailProvider) {
             })
         );
     }
+}
+
+// Credentials provider (username/email + password)
+if (supabaseAdapter) {
+    providers.push(
+        CredentialsProvider({
+            name: "Credentials",
+            credentials: {
+                email: { label: "Email", type: "email" },
+                password: { label: "Password", type: "password" },
+            },
+            authorize: async (credentials) => {
+                const email = credentials?.email?.toLowerCase();
+                const password = credentials?.password || "";
+                if (!email || !password) return null;
+
+                // Look up user by email from next_auth.users
+                if (!supabase) return null;
+                const { data: user, error } = await supabase
+                    .from("users")
+                    .select("id, email, name")
+                    .eq("email", email)
+                    .single();
+                if (error || !user) return null;
+
+                // Fetch password hash from our credential table
+                const { data: cred } = await supabase
+                    .from("user_credentials")
+                    .select("password_hash")
+                    .eq("user_id", user.id)
+                    .single();
+                if (!cred?.password_hash) return null;
+
+                const ok = await bcrypt.compare(password, cred.password_hash as string);
+                if (!ok) return null;
+
+                return { id: String(user.id), email: user.email, name: user.name } as any;
+            },
+        })
+    );
 }
 
 export const authOptions: NextAuthOptions = {

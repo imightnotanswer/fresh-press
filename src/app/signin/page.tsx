@@ -47,6 +47,10 @@ export default function SignInPage() {
         signIn("github", { callbackUrl: "/" });
     };
 
+    const handleGoogleSignIn = () => {
+        signIn("google", { callbackUrl: "/" });
+    };
+
     if (emailSent) {
         return (
             <div className="min-h-screen bg-gray-50 py-8">
@@ -116,6 +120,16 @@ export default function SignInPage() {
                             >
                                 <Github className="h-5 w-5 mr-2" />
                                 Continue with GitHub
+                            </Button>
+                        )}
+
+                        {Boolean(availableProviders?.google) && (
+                            <Button
+                                onClick={handleGoogleSignIn}
+                                className="w-full"
+                                variant="outline"
+                            >
+                                Continue with Google
                             </Button>
                         )}
 
