@@ -57,6 +57,7 @@ export default function MediaCard({ media }: MediaCardProps) {
     const thumbnailUrl = getThumbnailUrl();
     const hasVideo = !!media.videoUrl;
     const youTubeId = isYouTubeUrl(media.videoUrl || '') ? getYouTubeId(media.videoUrl || '') : null;
+    const inlineUrl = youTubeId ? `https://www.youtube.com/embed/${youTubeId}` : media.videoUrl;
 
     const handlePlayInline = useCallback((e: React.MouseEvent) => {
         e.preventDefault();
@@ -93,51 +94,51 @@ export default function MediaCard({ media }: MediaCardProps) {
     return (
         <div className="cutting-edge-card">
             <div className="aspect-video relative bg-gray-100 group overflow-hidden">
-                    {thumbnailUrl ? (
-                        <Image
-                            src={thumbnailUrl}
-                            alt={media.title}
-                            fill
-                            className="object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                    ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                            <div className="w-16 h-16 bg-black/20 rounded-full flex items-center justify-center group-hover:bg-black/30 transition-all">
-                                <Play className="w-8 h-8 text-black ml-1" />
-                            </div>
+                {thumbnailUrl ? (
+                    <Image
+                        src={thumbnailUrl}
+                        alt={media.title}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                        <div className="w-16 h-16 bg-black/20 rounded-full flex items-center justify-center group-hover:bg-black/30 transition-all">
+                            <Play className="w-8 h-8 text-black ml-1" />
                         </div>
-                    )}
-                    {/* Play overlay for video thumbnails */}
-                    {hasVideo && !isPlayingInline && (
-                        <button
-                            type="button"
-                            onClick={handlePlayInline}
-                            className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center"
-                            aria-label="Play"
-                        >
-                            <div className="w-16 h-16 bg-white/90 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
-                                <Play className="w-8 h-8 text-black ml-1" />
-                            </div>
-                        </button>
-                    )}
+                    </div>
+                )}
+                {/* Play overlay for video thumbnails */}
+                {hasVideo && !isPlayingInline && (
+                    <button
+                        type="button"
+                        onClick={handlePlayInline}
+                        className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center"
+                        aria-label="Play"
+                    >
+                        <div className="w-16 h-16 bg-white/90 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
+                            <Play className="w-8 h-8 text-black ml-1" />
+                        </div>
+                    </button>
+                )}
 
-                    {hasVideo && isPlayingInline && (
-                        <div className="absolute inset-0 z-10">
-                            <ReactPlayerDynamic
-                                ref={playerRef}
-                                url={media.videoUrl}
-                                width="100%"
-                                height="100%"
-                                playing
-                                controls
-                                config={{ youtube: { playerVars: { playsinline: 1 } } }}
-                                onProgress={(state: any) => {
-                                    if (typeof state.playedSeconds === 'number') setPlayedSeconds(state.playedSeconds);
-                                }}
-                                onError={(e: unknown) => setInlineError('Playback error')}
-                            />
-                        </div>
-                    )}
+                {hasVideo && isPlayingInline && (
+                    <div className="absolute inset-0 z-10">
+                        <ReactPlayerDynamic
+                            ref={playerRef}
+                            url={inlineUrl as string}
+                            width="100%"
+                            height="100%"
+                            playing
+                            controls
+                            config={{ youtube: { playerVars: { playsinline: 1 } } }}
+                            onProgress={(state: any) => {
+                                if (typeof state.playedSeconds === 'number') setPlayedSeconds(state.playedSeconds);
+                            }}
+                            onError={(e: unknown) => setInlineError('Playback error')}
+                        />
+                    </div>
+                )}
             </div>
             <Link href={buildDetailHref()}>
                 <div className="p-4">
