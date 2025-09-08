@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { getYouTubeId, isYouTubeUrl } from "@/lib/youtube";
 
-const ReactPlayerDynamic = dynamic(() => import("react-player"), {
+const ReactPlayerDynamic = dynamic<any>(() => import("react-player"), {
     ssr: false,
     loading: () => <div className="aspect-video bg-gray-200 animate-pulse rounded" />
 });
@@ -81,7 +81,6 @@ export default function VideoPlayer({
                 />
             ) : (
                 <ReactPlayerDynamic
-                    // @ts-expect-error - ReactPlayer dynamic import typing issue
                     url={normalizedUrl}
                     width={width}
                     height={height}
