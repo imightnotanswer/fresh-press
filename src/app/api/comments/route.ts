@@ -66,6 +66,20 @@ export async function POST(request: NextRequest) {
         const processedBody = await processMarkdown(commentBody);
 
         // Insert comment
+        // Prefer username from user_profiles
+        let displayName: string | null = null;
+        try {
+            const { data: prof } = await supabaseAdmin
+                .from('user_profiles')
+                .select('username')
+                .eq('id', session.user.id)
+                .single();
+            displayName = prof?.username ?? null;
+        } catch { }
+        if (!displayName) {
+            displayName = (session.user as any)?.name || (session.user as any)?.email?.split('@')[0] || 'User';
+        }
+
         const { data, error } = await supabaseAdmin
             .from("comments")
             .insert({
@@ -74,6 +88,7 @@ export async function POST(request: NextRequest) {
                 parent_id: parentId || null,
                 user_id: session.user.id,
                 body: processedBody,
+                author_name: displayName,
             })
             .select("*")
             .single();
