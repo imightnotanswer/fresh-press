@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { supabaseServer as supabase } from "@/lib/supabase-server";
+import { sanity } from "@/lib/sanity";
+import { groq } from "next-sanity";
 
 export async function GET(request: NextRequest) {
     try {
@@ -36,14 +38,25 @@ export async function GET(request: NextRequest) {
             .eq("user_id", userId)
             .order("created_at", { ascending: false });
 
-        // Enrich likes with post slugs/titles from Sanity (best-effort)
-        // We keep it simple: map to URLs by type; UI can fetch details lazily
-        const likedItems = (likes || []).map((l) => ({
-            post_id: l.post_id,
-            post_type: l.post_type,
-            created_at: l.created_at,
-            url: l.post_type === "review" ? `/reviews/${l.post_id}` : `/media/${l.post_id}`,
-        }));
+        // Enrich likes with minimal post data from Sanity so cards look like media/review pages
+        let likedItems = likes || [];
+        if (sanity && likedItems.length > 0) {
+            const reviewIds = likedItems.filter(l => l.post_type === "review").map(l => l.post_id);
+            const mediaIds = likedItems.filter(l => l.post_type === "media").map(l => l.post_id);
+
+            const [reviewDocs, mediaDocs] = await Promise.all([
+                reviewIds.length ? sanity.fetch(groq`*[_type=="review" && _id in ${reviewIds}] { _id, _type, title, slug, publishedAt, artist->{name}, "coverUrl": cover.asset->url }`) : Promise.resolve([]),
+                mediaIds.length ? sanity.fetch(groq`*[_type=="media" && _id in ${mediaIds}] { _id, _type, title, slug, publishedAt, artist->{name}, "coverUrl": cover.asset->url, videoUrl }`) : Promise.resolve([]),
+            ]);
+
+            const byId: Record<string, any> = {};
+            [...reviewDocs, ...mediaDocs].forEach((d: any) => { byId[d._id] = d; });
+
+            likedItems = likedItems.map(l => ({
+                ...l,
+                post: byId[l.post_id] || null,
+            }));
+        }
 
         if (likesError) {
             console.error("Error fetching likes:", likesError);
