@@ -58,6 +58,7 @@ export default function ReviewCard({ review }: ReviewCardProps) {
                                 <LikeButton
                                     postId={review._id}
                                     postType="review"
+                                    showCount
                                 />
                             </div>
                         </div>

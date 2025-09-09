@@ -29,12 +29,21 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: "Failed to fetch profile" }, { status: 500 });
         }
 
-        // Get user's liked posts
+        // Get user's liked posts with minimal post info for linking
         const { data: likes, error: likesError } = await supabase
             .from("likes")
             .select("post_id, post_type, created_at")
             .eq("user_id", userId)
             .order("created_at", { ascending: false });
+
+        // Enrich likes with post slugs/titles from Sanity (best-effort)
+        // We keep it simple: map to URLs by type; UI can fetch details lazily
+        const likedItems = (likes || []).map((l) => ({
+            post_id: l.post_id,
+            post_type: l.post_type,
+            created_at: l.created_at,
+            url: l.post_type === "review" ? `/reviews/${l.post_id}` : `/media/${l.post_id}`,
+        }));
 
         if (likesError) {
             console.error("Error fetching likes:", likesError);
@@ -50,7 +59,7 @@ export async function GET(request: NextRequest) {
                 avatar_url: session.user.image,
                 is_public: true,
             },
-            likes: likes || []
+            likes: likedItems
         });
     } catch (error) {
         console.error("Error in profile GET API:", error);

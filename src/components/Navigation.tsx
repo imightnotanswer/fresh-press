@@ -27,11 +27,23 @@ export default function Navigation() {
 
     const isAdmin = session?.user?.email && adminEmails.includes(session.user.email);
 
-    // Handle scroll detection
+    // Handle scroll detection with hysteresis to avoid flicker
     useEffect(() => {
+        const SHOW_AT = 120; // show compact state after this
+        const HIDE_AT = 60;  // return to expanded below this
+
+        let ticking = false;
+        const update = () => {
+            const y = window.scrollY;
+            setIsScrolled(prev => (prev ? y > HIDE_AT : y > SHOW_AT));
+            ticking = false;
+        };
+
         const handleScroll = () => {
-            const scrollTop = window.scrollY;
-            setIsScrolled(scrollTop > 50);
+            if (!ticking) {
+                window.requestAnimationFrame(update);
+                ticking = true;
+            }
         };
 
         const handleResize = () => {
@@ -124,8 +136,8 @@ export default function Navigation() {
                     </div>
                 </div>
 
-                {/* Bottom Header - Main Navigation (hidden on mobile, only visible when not scrolled on desktop) */}
-                <div className={`${isMobile ? 'hidden' : 'block'} border-t border-gray-800 transition-all duration-300 ${isScrolled ? 'h-0 opacity-0 overflow-hidden' : 'h-12'}`}>
+                {/* Bottom Header - Main Navigation (keep height constant; animate scale/opacity to avoid layout thrash) */}
+                <div className={`${isMobile ? 'hidden' : 'block'} border-t border-gray-800 h-12 transition-all duration-300 ${isScrolled ? 'opacity-0 scale-y-0 pointer-events-none' : 'opacity-100 scale-y-100'} origin-top`}>
                     <nav className="flex items-center justify-center h-12 px-2 space-x-8">
                         <Link
                             href="/reviews"
