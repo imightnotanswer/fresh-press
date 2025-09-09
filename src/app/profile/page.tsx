@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Heart, User, Settings } from "lucide-react";
+import MediaCard from "@/components/MediaCard";
+import ReviewCard from "@/components/ReviewCard";
 import Link from "next/link";
 
 interface UserProfile {
@@ -153,33 +155,32 @@ export default function ProfilePage() {
                                 </Button>
                             </div>
                         ) : (
-                            <div className="grid gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {likedPosts.map((item) => {
-                                    const slug = item.post?.slug?.current;
-                                    const href = slug
-                                        ? `/${item.post_type}/${slug}`
-                                        : `/${item.post_type}`;
-                                    return (
-                                        <div
-                                            key={`${item.post_type}-${item.post_id}`}
-                                            className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
-                                        >
-                                            <div>
-                                                <h3 className="font-medium text-gray-900">
-                                                    {item.post?.title || item.post_type}
-                                                </h3>
-                                                <p className="text-sm text-gray-600">
-                                                    {item.post?.artist?.name ? (
-                                                        <>by {item.post.artist.name} · </>
-                                                    ) : null}
-                                                    Liked on {new Date(item.created_at).toLocaleDateString()}
-                                                </p>
-                                            </div>
-                                            <Button variant="outline" size="sm" asChild>
-                                                <Link href={href}>View</Link>
-                                            </Button>
-                                        </div>
-                                    );
+                                    if (!item.post) return null;
+                                    const key = `${item.post_type}-${item.post_id}`;
+                                    if (item.post_type === "media") {
+                                        const media = {
+                                            _id: item.post._id,
+                                            title: item.post.title || "",
+                                            slug: item.post.slug || { current: "" },
+                                            publishedAt: item.post.publishedAt || new Date().toISOString(),
+                                            artist: { name: item.post.artist?.name || "", slug: { current: "" } },
+                                            coverUrl: item.post.coverUrl || undefined,
+                                            videoUrl: (item.post as any).videoUrl || undefined,
+                                        } as any;
+                                        return <MediaCard key={key} media={media} />;
+                                    }
+                                    const review = {
+                                        _id: item.post._id,
+                                        title: item.post.title || "",
+                                        slug: item.post.slug || { current: "" },
+                                        publishedAt: item.post.publishedAt || new Date().toISOString(),
+                                        artist: { name: item.post.artist?.name || "", slug: { current: "" } },
+                                        coverUrl: item.post.coverUrl || undefined,
+                                        blurb: undefined,
+                                    } as any;
+                                    return <ReviewCard key={key} review={review} />;
                                 })}
                             </div>
                         )}
