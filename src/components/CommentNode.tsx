@@ -40,8 +40,8 @@ export default function CommentNode({
     const [isEditing, setIsEditing] = useState(false);
     const [editText, setEditText] = useState(stripHtml(comment.body));
     const [score, setScore] = useState((comment as any).score || 0);
-    const [userVote, setUserVote] = useState((comment as any).user_vote || 0);
-    const vote = async (val: 1 | -1) => {
+    const [userVote, setUserVote] = useState<number>((comment as any).user_vote || 0);
+    const vote = async (val: 1 | -1 | 0) => {
         const res = await fetch('/api/comments/vote', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
