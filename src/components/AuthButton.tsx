@@ -16,10 +16,24 @@ import { useState, useEffect } from "react";
 export default function AuthButton() {
     const { data: session, status } = useSession();
     const [isAdmin, setIsAdmin] = useState(false);
+    const [avatarColor, setAvatarColor] = useState<string | null>(null);
 
     useEffect(() => {
         if (session?.user?.id) {
             checkAdminStatus();
+            const seeded = (session.user as any)?.avatar_color ?? null;
+            if (seeded) setAvatarColor(seeded);
+            const load = () => fetch('/api/profile')
+                .then(r => r.json())
+                .then(d => setAvatarColor(d?.profile?.avatar_color || null))
+                .catch(() => { });
+            if (!seeded) load();
+            const handler = (e: any) => {
+                if (e?.detail?.avatar_color) setAvatarColor(e.detail.avatar_color);
+                else load();
+            };
+            window.addEventListener('profile-updated', handler);
+            return () => window.removeEventListener('profile-updated', handler);
         }
     }, [session]);
 
@@ -53,13 +67,17 @@ export default function AuthButton() {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                    <Avatar className="h-8 w-8">
-                        <AvatarImage src={session.user?.image || ""} alt={session.user?.name || ""} />
-                        <AvatarFallback>
-                            <User className="h-4 w-4" />
-                        </AvatarFallback>
-                    </Avatar>
+                <Button variant="ghost" size="icon" className="relative h-8 w-8 rounded-full p-0">
+                    {avatarColor ? (
+                        <div className="h-8 w-8 rounded-full" style={{ backgroundColor: avatarColor }} />
+                    ) : (
+                        <Avatar className="h-8 w-8">
+                            <AvatarImage src={session.user?.image || ""} alt={session.user?.name || ""} />
+                            <AvatarFallback>
+                                <User className="h-4 w-4" />
+                            </AvatarFallback>
+                        </Avatar>
+                    )}
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>

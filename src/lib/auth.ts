@@ -178,6 +178,29 @@ export const authOptions: NextAuthOptions = {
         strategy: "jwt",
     },
     callbacks: {
+        async signIn({ user, account }) {
+            try {
+                // Disallow creating new accounts via magic email links.
+                // Only users that already exist may use email sign-in.
+                if (account?.provider === "email") {
+                    const email = (user as any)?.email?.toLowerCase?.();
+                    if (!email || !supabase) return false;
+                    const { data } = await supabase
+                        .schema("next_auth")
+                        .from("users")
+                        .select("id")
+                        .eq("email", email)
+                        .maybeSingle();
+                    if (!data) {
+                        // Block sign-in; they must register via the signup form.
+                        return false;
+                    }
+                }
+                return true;
+            } catch {
+                return false;
+            }
+        },
         async jwt({ token, user }) {
             if (user) {
                 token.id = user.id;
@@ -188,6 +211,22 @@ export const authOptions: NextAuthOptions = {
             if (token) {
                 session.user.id = token.id as string;
             }
+            // Hydrate frequently used profile fields for faster client-side access
+            try {
+                if (supabase && session?.user?.id) {
+                    const { data } = await supabase
+                        .from('user_profiles')
+                        .select('username, avatar_color, avatar_url, is_admin')
+                        .eq('id', session.user.id)
+                        .single();
+                    if (data) {
+                        (session.user as any).username = data.username ?? null;
+                        (session.user as any).avatar_color = data.avatar_color ?? null;
+                        (session.user as any).avatar_url = data.avatar_url ?? null;
+                        (session.user as any).is_admin = data.is_admin ?? false;
+                    }
+                }
+            } catch { }
             return session;
         },
     },

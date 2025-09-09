@@ -127,6 +127,45 @@ export async function GET(request: NextRequest) {
                     .order('created_at', { ascending: false })
                     .limit(50);
                 if (error || !data) return [];
+
+                // Enrich with link paths using Sanity slugs
+                try {
+                    if (sanity && data.length) {
+                        const reviewIds = data.filter((c: any) => c.post_type === 'review').map((c: any) => c.post_id);
+                        const mediaIds = data.filter((c: any) => c.post_type === 'media').map((c: any) => c.post_id);
+                        const [reviewDocs, mediaDocs] = await Promise.all([
+                            reviewIds.length
+                                ? sanity.fetch(
+                                    groq`*[_type=="review" && _id in $ids]{ _id, slug, title, artist->{name} }`,
+                                    { ids: reviewIds }
+                                )
+                                : Promise.resolve([]),
+                            mediaIds.length
+                                ? sanity.fetch(
+                                    groq`*[_type=="media" && _id in $ids]{ _id, slug, title }`,
+                                    { ids: mediaIds }
+                                )
+                                : Promise.resolve([]),
+                        ]);
+                        const pathById: Record<string, string> = {};
+                        const titleById: Record<string, string> = {};
+                        (reviewDocs as any[]).forEach((d: any) => {
+                            if (d?.slug?.current) pathById[d._id] = `/reviews/${d.slug.current}`;
+                            const album = d?.title || "Review";
+                            const artist = d?.artist?.name ? ` by ${d.artist.name}` : "";
+                            titleById[d._id] = `${album}${artist}`;
+                        });
+                        (mediaDocs as any[]).forEach((d: any) => {
+                            if (d?.slug?.current) pathById[d._id] = `/media/${d.slug.current}`;
+                            titleById[d._id] = d?.title || "Media";
+                        });
+                        return data.map((c: any) => ({
+                            ...c,
+                            link: pathById[c.post_id] ? `${pathById[c.post_id]}#comment-${c.id}` : null,
+                            target_title: titleById[c.post_id] || null,
+                        }));
+                    }
+                } catch { }
                 return data;
             })()
         });
@@ -147,7 +186,9 @@ export async function PUT(request: NextRequest) {
             return NextResponse.json({ error: "Database not configured" }, { status: 503 });
         }
 
-        const { username, display_name, bio, is_public } = await request.json();
+        // Parse the body ONCE (request.json() is a stream and can only be read once)
+        const body = await request.json();
+        const { username, display_name, bio, is_public, avatar_color } = body || {};
 
         const { data, error } = await supabase
             .from("user_profiles")
@@ -156,6 +197,7 @@ export async function PUT(request: NextRequest) {
                 username,
                 display_name,
                 bio,
+                avatar_color: avatar_color ?? null,
                 is_public: is_public ?? true,
                 updated_at: new Date().toISOString(),
             })
@@ -163,6 +205,9 @@ export async function PUT(request: NextRequest) {
             .single();
 
         if (error) {
+            if ((error as any).code === '23505') {
+                return NextResponse.json({ error: "Username is already taken" }, { status: 409 });
+            }
             console.error("Error updating profile:", error);
             return NextResponse.json({ error: "Failed to update profile" }, { status: 500 });
         }

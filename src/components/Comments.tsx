@@ -13,6 +13,9 @@ interface Comment {
     body: string;
     created_at: string;
     user_id: string;
+    updated_at?: string;
+    author_name?: string;
+    score?: number;
     children: Comment[];
 }
 
@@ -45,6 +48,36 @@ export default function Comments({ postType, postId }: CommentsProps) {
         } finally {
             setIsLoading(false);
         }
+    };
+
+    // ----- helpers for optimistic updates -----
+    const updateTree = (nodes: Comment[], id: string, fn: (n: Comment) => Comment): Comment[] =>
+        nodes.map((n) => {
+            if (n.id === id) {
+                return fn({ ...n });
+            }
+            if (n.children?.length) {
+                return { ...n, children: updateTree(n.children, id, fn) };
+            }
+            return n;
+        });
+
+    const sortTree = (nodes: Comment[]) => {
+        nodes.sort(
+            (a: any, b: any) => ((b.score || 0) - (a.score || 0)) || (new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+        );
+        nodes.forEach((n) => sortTree(n.children));
+    };
+
+    const handleVoteUpdate = (id: string, newScore: number) => {
+        const next = updateTree(comments, id, (n) => ({ ...n, score: newScore }));
+        sortTree(next);
+        setComments([...next]);
+    };
+
+    const handleEdited = (id: string, newBody: string, updatedAt?: string) => {
+        const next = updateTree(comments, id, (n) => ({ ...n, body: newBody, updated_at: updatedAt || new Date().toISOString() }));
+        setComments([...next]);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -201,6 +234,9 @@ export default function Comments({ postType, postId }: CommentsProps) {
                                 postType={postType}
                                 postId={postId}
                                 onReply={handleReply}
+                                onReload={fetchComments}
+                                onVote={handleVoteUpdate}
+                                onEdited={handleEdited}
                             />
                         ))
                     )}

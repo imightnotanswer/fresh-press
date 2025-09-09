@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { signIn, getProviders } from "next-auth/react";
-import type { ClientSafeProvider } from "next-auth/react";
+import { useState } from "react";
+import { signIn } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,14 +11,11 @@ import Link from "next/link";
 
 export default function SignInPage() {
     const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [pwEmail, setPwEmail] = useState("");
+    const [pw, setPw] = useState("");
+    const [pwError, setPwError] = useState<string | null>(null);
     const [emailSent, setEmailSent] = useState(false);
-    const [availableProviders, setAvailableProviders] = useState<Record<string, ClientSafeProvider> | null>(null);
-
-    useEffect(() => {
-        getProviders().then(setAvailableProviders).catch(() => setAvailableProviders({}));
-    }, []);
 
     const handleEmailSignIn = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -27,9 +23,21 @@ export default function SignInPage() {
 
         setIsLoading(true);
         try {
+            // First, ensure the user exists; if not, direct them to signup
+            const check = await fetch('/api/auth/user-exists', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            }).then(r => r.json());
+
+            if (!check?.exists) {
+                // Send them to create an account
+                window.location.href = `/signup?email=${encodeURIComponent(email)}`;
+                return;
+            }
+
             const result = await signIn("email", {
                 email,
-                callbackUrl: "/",
                 redirect: false,
             });
 
@@ -49,25 +57,22 @@ export default function SignInPage() {
         signIn("github", { callbackUrl: "/" });
     };
 
-    const handleGoogleSignIn = () => {
-        signIn("google", { callbackUrl: "/" });
-    };
-
-    const handleCredentialsSignIn = async (e: React.FormEvent) => {
+    const handlePasswordSignIn = async (e: React.FormEvent) => {
         e.preventDefault();
+        setPwError(null);
+        if (!pwEmail || !pw) return;
         setIsLoading(true);
         try {
             const res = await signIn("credentials", {
-                email,
-                password,
-                redirect: true,
-                callbackUrl: "/",
+                email: pwEmail,
+                password: pw,
+                redirect: false,
             });
-            if (!res?.ok && (res as any)?.error) {
-                console.error("Credentials sign in failed:", (res as any).error);
+            if (res?.error) {
+                setPwError("That email or password is incorrect");
+            } else {
+                window.location.href = "/";
             }
-        } catch (err) {
-            console.error("Error with credentials sign in:", err);
         } finally {
             setIsLoading(false);
         }
@@ -134,26 +139,14 @@ export default function SignInPage() {
                     </CardHeader>
                     <CardContent className="space-y-6">
                         {/* GitHub Sign In */}
-                        {Boolean(availableProviders?.github) && (
-                            <Button
-                                onClick={handleGitHubSignIn}
-                                className="w-full"
-                                variant="outline"
-                            >
-                                <Github className="h-5 w-5 mr-2" />
-                                Continue with GitHub
-                            </Button>
-                        )}
-
-                        {Boolean(availableProviders?.google) && (
-                            <Button
-                                onClick={handleGoogleSignIn}
-                                className="w-full"
-                                variant="outline"
-                            >
-                                Continue with Google
-                            </Button>
-                        )}
+                        <Button
+                            onClick={handleGitHubSignIn}
+                            className="w-full"
+                            variant="outline"
+                        >
+                            <Github className="h-5 w-5 mr-2" />
+                            Continue with GitHub
+                        </Button>
 
                         <div className="relative">
                             <div className="absolute inset-0 flex items-center">
@@ -164,76 +157,56 @@ export default function SignInPage() {
                             </div>
                         </div>
 
-                        {/* Email Sign In */}
-                        {Boolean(availableProviders?.email) && (
-                            <form onSubmit={handleEmailSignIn} className="space-y-4">
-                                <div>
-                                    <Label htmlFor="email">Email Address</Label>
-                                    <Input
-                                        id="email"
-                                        type="email"
-                                        placeholder="Enter your email"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        required
-                                    />
-                                </div>
-                                <Button
-                                    type="submit"
-                                    className="w-full"
-                                    disabled={isLoading || !email}
-                                >
-                                    <Mail className="h-5 w-5 mr-2" />
-                                    {isLoading ? "Sending..." : "Continue with Email"}
-                                </Button>
-                            </form>
-                        )}
+                        {/* Email Sign In (requires existing account) */}
+                        <form onSubmit={handleEmailSignIn} className="space-y-4">
+                            <div>
+                                <Label htmlFor="email">Email Address</Label>
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    placeholder="Enter your email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <Button
+                                type="submit"
+                                className="w-full"
+                                disabled={isLoading || !email}
+                            >
+                                <Mail className="h-5 w-5 mr-2" />
+                                {isLoading ? "Checking..." : "Continue with Email"}
+                            </Button>
+                        </form>
 
-                        {/* Credentials Sign In */}
-                        {Boolean(availableProviders?.credentials) && (
-                            <form onSubmit={handleCredentialsSignIn} className="space-y-4">
-                                <div>
-                                    <Label htmlFor="cred-email">Email</Label>
-                                    <Input
-                                        id="cred-email"
-                                        type="email"
-                                        placeholder="you@example.com"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <Label htmlFor="cred-password">Password</Label>
-                                    <Input
-                                        id="cred-password"
-                                        type="password"
-                                        placeholder="Your password"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        required
-                                    />
-                                </div>
-                                <div className="text-right -mt-2">
-                                    <Link href="/forgot-password" className="text-sm text-blue-600 hover:underline">
-                                        Forgot password?
-                                    </Link>
-                                </div>
-                                <Button type="submit" className="w-full" disabled={isLoading || !email || !password}>
-                                    {isLoading ? "Signing in..." : "Sign in with Password"}
-                                </Button>
-                            </form>
-                        )}
+                        {/* Password Sign In */}
+                        <div className="relative">
+                            <div className="absolute inset-0 flex items-center">
+                                <span className="w-full border-t" />
+                            </div>
+                            <div className="relative flex justify-center text-xs uppercase">
+                                <span className="bg-white px-2 text-gray-500">Or sign in with password</span>
+                            </div>
+                        </div>
+                        <form onSubmit={handlePasswordSignIn} className="space-y-3">
+                            <div>
+                                <Label htmlFor="pw-email">Email</Label>
+                                <Input id="pw-email" type="email" value={pwEmail} onChange={(e) => setPwEmail(e.target.value)} required />
+                            </div>
+                            <div>
+                                <Label htmlFor="pw">Password</Label>
+                                <Input id="pw" type="password" value={pw} onChange={(e) => setPw(e.target.value)} required />
+                            </div>
+                            {pwError && <p className="text-sm text-red-600">{pwError}</p>}
+                            <Button type="submit" className="w-full" disabled={isLoading}>
+                                {isLoading ? "Signing in..." : "Sign in with Password"}
+                            </Button>
+                        </form>
 
-                        <div className="text-center space-y-2">
+                        <div className="text-center">
                             <p className="text-xs text-gray-500">
                                 By signing in, you agree to our terms of service and privacy policy.
-                            </p>
-                            <p className="text-sm">
-                                New here? <Link className="text-blue-600 hover:underline" href="/signup">Create an account</Link>
-                            </p>
-                            <p className="text-sm">
-                                <Link className="text-blue-600 hover:underline" href="/forgot-password">Forgot password?</Link>
                             </p>
                         </div>
                     </CardContent>

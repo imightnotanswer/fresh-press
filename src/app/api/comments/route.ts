@@ -80,8 +80,6 @@ export async function POST(request: NextRequest) {
             displayName = (session.user as any)?.name || (session.user as any)?.email?.split('@')[0] || 'User';
         }
 
-        const authorEmail = (session.user as any)?.email || "";
-
         const { data, error } = await supabaseAdmin
             .from("comments")
             .insert({
@@ -90,8 +88,8 @@ export async function POST(request: NextRequest) {
                 parent_id: parentId || null,
                 user_id: session.user.id,
                 body: processedBody,
+                content: processedBody,
                 author_name: displayName,
-                author_email: authorEmail,
             })
             .select("*")
             .single();
@@ -105,6 +103,106 @@ export async function POST(request: NextRequest) {
     } catch (error) {
         console.error("Error in comments API:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    }
+}
+
+
+export async function PUT(request: NextRequest) {
+    try {
+        if (!supabaseAdmin) {
+            return NextResponse.json({ error: "Comments system not configured" }, { status: 503 });
+        }
+
+        const session = await getServerSession(authOptions);
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        const { id, body } = await request.json();
+        if (!id || !body) return NextResponse.json({ error: "Missing id or body" }, { status: 400 });
+
+        // Ensure ownership
+        const { data: existing } = await supabaseAdmin
+            .from('comments')
+            .select('id, user_id')
+            .eq('id', id)
+            .single();
+        if (!existing || existing.user_id !== session.user.id) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+
+        const processedBody = await processMarkdown(body);
+
+        const { data, error } = await supabaseAdmin
+            .from('comments')
+            .update({
+                body: processedBody,
+                content: processedBody,
+                updated_at: new Date().toISOString(),
+            })
+            .eq('id', id)
+            .select('*')
+            .single();
+
+        if (error) {
+            console.error('Error updating comment:', error);
+            return NextResponse.json({ error: 'Failed to update comment' }, { status: 500 });
+        }
+
+        return NextResponse.json(data);
+    } catch (error) {
+        console.error('Error in comments PUT API:', error);
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
+}
+
+
+export async function DELETE(request: NextRequest) {
+    try {
+        if (!supabaseAdmin) {
+            return NextResponse.json({ error: "Comments system not configured" }, { status: 503 });
+        }
+
+        const session = await getServerSession(authOptions);
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        const { searchParams } = new URL(request.url);
+        const id = searchParams.get('id');
+        if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+
+        const { data: existing } = await supabaseAdmin
+            .from('comments')
+            .select('id, user_id')
+            .eq('id', id)
+            .single();
+        if (!existing || existing.user_id !== session.user.id) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+
+        const { data, error } = await supabaseAdmin
+            .from('comments')
+            .update({
+                deleted: true,
+                author_name: '[removed]',
+                body: '[deleted]',
+                content: '[deleted]',
+                updated_at: new Date().toISOString(),
+            })
+            .eq('id', id)
+            .select('*')
+            .single();
+
+        if (error) {
+            console.error('Error deleting comment:', error);
+            return NextResponse.json({ error: 'Failed to delete comment' }, { status: 500 });
+        }
+
+        return NextResponse.json(data);
+    } catch (error) {
+        console.error('Error in comments DELETE API:', error);
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
 

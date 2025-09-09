@@ -20,11 +20,15 @@ export default function LikeButton({ postId, postType, initialLiked = false, onL
     const [count, setCount] = useState<number | null>(null);
 
     useEffect(() => {
-        if (session?.user?.id) {
-            checkLikeStatus();
-        }
+        // Always fetch count for display, even if not logged in
         if (showCount) {
             fetchCount();
+        }
+        // Only check personal like status if signed in
+        if (session?.user?.id) {
+            checkLikeStatus();
+        } else {
+            setLiked(false);
         }
     }, [session, postId, postType, showCount]);
 
@@ -96,6 +100,7 @@ export default function LikeButton({ postId, postType, initialLiked = false, onL
         }
     };
 
+    // If not signed in, show count and redirect on click
     if (!session) {
         return (
             <Button
@@ -106,6 +111,11 @@ export default function LikeButton({ postId, postType, initialLiked = false, onL
             >
                 <Heart className="h-4 w-4" />
                 <span>Like</span>
+                {showCount && (
+                    <span className="ml-1 text-xs rounded-full px-2 py-0.5 bg-gray-100 text-gray-600">
+                        {count ?? "–"}
+                    </span>
+                )}
             </Button>
         );
     }
@@ -117,8 +127,8 @@ export default function LikeButton({ postId, postType, initialLiked = false, onL
             onClick={handleLike}
             disabled={loading}
             className={`flex items-center gap-1 transition-colors ${liked
-                    ? "text-red-500 hover:text-red-600"
-                    : "text-gray-500 hover:text-red-500"
+                ? "text-red-500 hover:text-red-600"
+                : "text-gray-500 hover:text-red-500"
                 }`}
         >
             <Heart className={`h-4 w-4 ${liked ? "fill-current" : ""}`} />

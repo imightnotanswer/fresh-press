@@ -11,6 +11,7 @@ export default function SignUpPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [name, setName] = useState("");
+    const [showPw, setShowPw] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState<string | null>(null);
 
@@ -56,7 +57,12 @@ export default function SignUpPage() {
                             </div>
                             <div>
                                 <Label htmlFor="password">password</Label>
-                                <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                                <div className="flex gap-2">
+                                    <Input id="password" type={showPw ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} required />
+                                    <Button type="button" variant="outline" onClick={() => setShowPw((v) => !v)}>
+                                        {showPw ? "Hide" : "Show"}
+                                    </Button>
+                                </div>
                             </div>
                             <Button type="submit" className="w-full" disabled={isLoading}>
                                 {isLoading ? "Creating..." : "Create account"}

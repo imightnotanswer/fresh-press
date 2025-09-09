@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { redirect } from "next/navigation";
+import { redirect, useSearchParams } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +18,7 @@ interface UserProfile {
     display_name: string;
     bio: string | null;
     avatar_url: string | null;
+    avatar_color?: string | null;
     is_public: boolean;
 }
 
@@ -39,6 +40,8 @@ interface LikedPost {
 
 export default function ProfilePage() {
     const { data: session, status } = useSession();
+    const searchParams = useSearchParams();
+    const requestedUserId = searchParams.get("userId");
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [likedPosts, setLikedPosts] = useState<LikedPost[]>([]);
     const [comments, setComments] = useState<any[]>([]);
@@ -47,15 +50,20 @@ export default function ProfilePage() {
     useEffect(() => {
         if (status === "unauthenticated") {
             redirect("/api/auth/signin");
+            return;
         }
         if (status === "authenticated") {
+            // Reset while switching between different user profiles to avoid stale content
+            setLoading(true);
+            setProfile(null);
             fetchProfile();
         }
-    }, [status]);
+    }, [status, requestedUserId]);
 
     const fetchProfile = async () => {
         try {
-            const response = await fetch("/api/profile");
+            const query = requestedUserId ? `?userId=${encodeURIComponent(requestedUserId)}` : "";
+            const response = await fetch(`/api/profile${query}`);
             if (response.ok) {
                 const data = await response.json();
                 setProfile(data.profile);
@@ -108,16 +116,20 @@ export default function ProfilePage() {
                 <Card className="mb-8">
                     <CardContent className="p-6">
                         <div className="flex items-start gap-6">
-                            <Avatar className="h-24 w-24">
-                                <AvatarImage src={profile.avatar_url || ""} alt={profile.display_name} />
-                                <AvatarFallback>
-                                    <User className="h-12 w-12" />
-                                </AvatarFallback>
-                            </Avatar>
+                            {profile.avatar_color ? (
+                                <div className="h-24 w-24 rounded-full" style={{ backgroundColor: profile.avatar_color }} />
+                            ) : (
+                                <Avatar className="h-24 w-24">
+                                    <AvatarImage src={profile.avatar_url || ""} alt={profile.display_name} />
+                                    <AvatarFallback>
+                                        <User className="h-12 w-12" />
+                                    </AvatarFallback>
+                                </Avatar>
+                            )}
                             <div className="flex-1">
                                 <div className="flex items-center gap-4 mb-2">
                                     <h1 className="text-3xl font-bold text-gray-900">
-                                        {profile.display_name}
+                                        {profile.display_name || profile.username || ""}
                                     </h1>
                                     <Badge variant={profile.is_public ? "default" : "secondary"}>
                                         {profile.is_public ? "Public" : "Private"}
@@ -128,12 +140,14 @@ export default function ProfilePage() {
                                     <p className="text-gray-700">{profile.bio}</p>
                                 )}
                             </div>
-                            <Link href="/profile/edit">
-                                <Button variant="outline" size="sm">
-                                    <Settings className="h-4 w-4 mr-2" />
-                                    Edit Profile
-                                </Button>
-                            </Link>
+                            {profile?.id === session?.user?.id && (
+                                <Link href="/profile/edit">
+                                    <Button variant="outline" size="sm">
+                                        <Settings className="h-4 w-4 mr-2" />
+                                        Edit Profile
+                                    </Button>
+                                </Link>
+                            )}
                         </div>
                     </CardContent>
                 </Card>
@@ -214,11 +228,11 @@ export default function ProfilePage() {
                         ) : (
                             <div className="space-y-3">
                                 {comments.map((c) => {
-                                    const href = `/${c.post_type}/${c.post_id}#comment-${c.id}`;
+                                    const href = (c as any).link || `/${c.post_type === 'review' ? 'reviews' : 'media'}/${c.post_id}#comment-${c.id}`;
                                     return (
                                         <div key={c.id} className="p-3 border rounded">
                                             <Link href={href} className="font-medium hover:underline">
-                                                View comment on {c.post_type}
+                                                {(c as any).target_title || c.post_type}
                                             </Link>
                                             <div className="prose prose-sm max-w-none mt-1" dangerouslySetInnerHTML={{ __html: c.body }} />
                                             <p className="text-xs text-gray-500 mt-1">{new Date(c.created_at).toLocaleString()}</p>

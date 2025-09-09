@@ -137,7 +137,7 @@ export default function Navigation() {
                         </div>
                     </div>
 
-                    {/* Right side actions - Hidden on mobile, visible on desktop */}
+                    {/* Right side actions - Desktop */}
                     <div className="hidden sm:flex items-center space-x-6 ml-auto">
                         <Link
                             href="/newsletter"
@@ -145,6 +145,11 @@ export default function Navigation() {
                         >
                             Newsletter
                         </Link>
+                        <AuthButton />
+                    </div>
+
+                    {/* Right side actions - Mobile avatar */}
+                    <div className="flex sm:hidden items-center ml-auto">
                         <AuthButton />
                     </div>
                 </div>
