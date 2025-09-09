@@ -11,9 +11,10 @@ interface LikeButtonProps {
     initialLiked?: boolean;
     onLikeChange?: (liked: boolean) => void;
     showCount?: boolean;
+    hideLabel?: boolean;
 }
 
-export default function LikeButton({ postId, postType, initialLiked = false, onLikeChange, showCount = false }: LikeButtonProps) {
+export default function LikeButton({ postId, postType, initialLiked = false, onLikeChange, showCount = false, hideLabel = false }: LikeButtonProps) {
     const { data: session } = useSession();
     const [liked, setLiked] = useState(initialLiked);
     const [loading, setLoading] = useState(false);
@@ -110,11 +111,13 @@ export default function LikeButton({ postId, postType, initialLiked = false, onL
                 className="flex items-center gap-1 text-gray-500 hover:text-red-500"
             >
                 <Heart className="h-4 w-4" />
-                <span>Like</span>
+                {!hideLabel && <span>Like</span>}
                 {showCount && (
-                    <span className="ml-1 text-xs rounded-full px-2 py-0.5 bg-gray-100 text-gray-600">
-                        {count ?? "–"}
-                    </span>
+                    hideLabel ? (
+                        <span className="ml-1 text-xs">{count ?? "–"}</span>
+                    ) : (
+                        <span className="ml-1 text-xs rounded-full px-2 py-0.5 bg-gray-100 text-gray-600">{count ?? "–"}</span>
+                    )
                 )}
             </Button>
         );
@@ -132,11 +135,13 @@ export default function LikeButton({ postId, postType, initialLiked = false, onL
                 }`}
         >
             <Heart className={`h-4 w-4 ${liked ? "fill-current" : ""}`} />
-            <span>{liked ? "Liked" : "Like"}</span>
+            {!hideLabel && <span>{liked ? "Liked" : "Like"}</span>}
             {showCount && (
-                <span className="ml-1 text-xs rounded-full px-2 py-0.5 bg-gray-100 text-gray-600">
-                    {count ?? "–"}
-                </span>
+                hideLabel ? (
+                    <span className="ml-1 text-xs">{count ?? "–"}</span>
+                ) : (
+                    <span className="ml-1 text-xs rounded-full px-2 py-0.5 bg-gray-100 text-gray-600">{count ?? "–"}</span>
+                )
             )}
         </Button>
     );

@@ -210,7 +210,7 @@ export default function MediaCard({ media }: MediaCardProps) {
                         year: 'numeric'
                     })}
                 </p>
-                <LikeButton postId={media._id} postType="media" showCount />
+                <LikeButton postId={media._id} postType="media" showCount hideLabel />
             </div>
         </div>
     );

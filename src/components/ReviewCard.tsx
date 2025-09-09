@@ -59,6 +59,7 @@ export default function ReviewCard({ review }: ReviewCardProps) {
                     postId={review._id}
                     postType="review"
                     showCount
+                    hideLabel
                 />
             </div>
         </div>
