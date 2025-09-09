@@ -20,6 +20,26 @@ export async function POST(request: NextRequest) {
             .eq("email", normalizedEmail)
             .single();
         if (existing) {
+            // If a user row exists but no credentials yet, allow setting credentials now
+            const { data: existingCred } = await supabase
+                .schema("next_auth")
+                .from("user_credentials")
+                .select("user_id")
+                .eq("user_id", existing.id)
+                .maybeSingle?.() as any || { data: null };
+
+            if (!existingCred) {
+                const passwordHashExisting = await bcrypt.hash(password, 12);
+                const { error: setCredErr } = await supabase
+                    .schema("next_auth")
+                    .from("user_credentials")
+                    .insert({ user_id: existing.id, password_hash: passwordHashExisting });
+                if (setCredErr) {
+                    console.error("Register: failed to set missing credentials", setCredErr);
+                    return NextResponse.json({ error: "Failed to set credentials" }, { status: 500 });
+                }
+                return NextResponse.json({ success: true, message: "Credentials set for existing user" });
+            }
             return NextResponse.json({ error: "User already exists" }, { status: 409 });
         }
 
