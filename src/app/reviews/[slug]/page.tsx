@@ -6,7 +6,6 @@ import { REVIEW_BY_SLUG, RELATED_BY_ARTIST } from "@/lib/groq";
 import PortableTextRenderer from "@/components/PortableTextRenderer";
 import Comments from "@/components/Comments";
 import AuthButton from "@/components/AuthButton";
-import Navigation from "@/components/Navigation";
 import ReviewContent from "@/components/ReviewContent";
 import ClickableImage from "@/components/ClickableImage";
 import LikeButton from "@/components/LikeButton";
@@ -59,8 +58,6 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Header */}
-            <Navigation />
 
             <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

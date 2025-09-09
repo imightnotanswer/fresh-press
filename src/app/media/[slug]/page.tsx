@@ -4,7 +4,6 @@ import { sanity } from "@/lib/sanity";
 import { MEDIA_BY_SLUG } from "@/lib/groq";
 import Comments from "@/components/Comments";
 import AuthButton from "@/components/AuthButton";
-import Navigation from "@/components/Navigation";
 import VideoPlayer from "@/components/VideoPlayer";
 import Image from "next/image";
 // Render plain iframe for YouTube links on the detail page
@@ -54,8 +53,6 @@ export default async function MediaPage({ params, searchParams }: MediaPageProps
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Header */}
-            <Navigation />
 
             <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="space-y-8">
