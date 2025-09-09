@@ -79,8 +79,18 @@ export async function GET(request: NextRequest) {
             const mediaIds = likedItems.filter(l => l.post_type === "media").map(l => l.post_id);
 
             const [reviewDocs, mediaDocs] = await Promise.all([
-                reviewIds.length ? sanity.fetch(groq`*[_type=="review" && _id in ${reviewIds}] { _id, _type, title, slug, publishedAt, artist->{name}, "coverUrl": cover.asset->url }`) : Promise.resolve([]),
-                mediaIds.length ? sanity.fetch(groq`*[_type=="media" && _id in ${mediaIds}] { _id, _type, title, slug, publishedAt, artist->{name}, "coverUrl": cover.asset->url, videoUrl }`) : Promise.resolve([]),
+                reviewIds.length
+                    ? sanity.fetch(
+                        groq`*[_type=="review" && _id in $ids] { _id, _type, title, slug, publishedAt, artist->{name}, "coverUrl": cover.asset->url }`,
+                        { ids: reviewIds }
+                    )
+                    : Promise.resolve([]),
+                mediaIds.length
+                    ? sanity.fetch(
+                        groq`*[_type=="media" && _id in $ids] { _id, _type, title, slug, publishedAt, artist->{name}, "coverUrl": cover.asset->url, videoUrl }`,
+                        { ids: mediaIds }
+                    )
+                    : Promise.resolve([]),
             ]);
 
             const byId: Record<string, any> = {};
