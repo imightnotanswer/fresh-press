@@ -80,6 +80,8 @@ export async function POST(request: NextRequest) {
             displayName = (session.user as any)?.name || (session.user as any)?.email?.split('@')[0] || 'User';
         }
 
+        const authorEmail = (session.user as any)?.email || "";
+
         const { data, error } = await supabaseAdmin
             .from("comments")
             .insert({
@@ -89,6 +91,7 @@ export async function POST(request: NextRequest) {
                 user_id: session.user.id,
                 body: processedBody,
                 author_name: displayName,
+                author_email: authorEmail,
             })
             .select("*")
             .single();

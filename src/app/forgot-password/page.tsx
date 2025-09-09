@@ -9,7 +9,6 @@ import Link from "next/link";
 
 export default function ForgotPasswordPage() {
     const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
     const [message, setMessage] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
 
@@ -18,14 +17,14 @@ export default function ForgotPasswordPage() {
         setLoading(true);
         setMessage(null);
         try {
-            const res = await fetch("/api/auth/reset-password", {
+            const res = await fetch("/api/auth/request-password-reset", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, newPassword: password }),
+                body: JSON.stringify({ email }),
             });
             const data = await res.json().catch(() => ({}));
-            if (!res.ok) throw new Error(data?.error || "Failed to reset password");
-            setMessage("Password updated. You can now sign in.");
+            if (!res.ok) throw new Error(data?.error || "Failed to send reset link");
+            setMessage("If the email exists, a reset link has been sent.");
         } catch (err: any) {
             setMessage(err.message || "Something went wrong");
         } finally {
@@ -46,11 +45,7 @@ export default function ForgotPasswordPage() {
                                 <Label htmlFor="email">Email</Label>
                                 <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
                             </div>
-                            <div>
-                                <Label htmlFor="pw">New password</Label>
-                                <Input id="pw" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-                            </div>
-                            <Button type="submit" className="w-full" disabled={loading}>{loading ? "Updating..." : "Update password"}</Button>
+                            <Button type="submit" className="w-full" disabled={loading}>{loading ? "Sending..." : "Send reset link"}</Button>
                         </form>
                         {message && <p className="text-sm text-gray-600 mt-4 text-center">{message}</p>}
                         <div className="text-center mt-4">
