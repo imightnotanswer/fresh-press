@@ -47,15 +47,15 @@ export default function SignUpPage() {
                     <CardContent>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
-                                <Label htmlFor="name">Name</Label>
-                                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+                                <Label htmlFor="username">username</Label>
+                                <Input id="username" value={name} onChange={(e) => setName(e.target.value)} />
                             </div>
                             <div>
-                                <Label htmlFor="email">Email</Label>
+                                <Label htmlFor="email">email</Label>
                                 <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
                             </div>
                             <div>
-                                <Label htmlFor="password">Password</Label>
+                                <Label htmlFor="password">password</Label>
                                 <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
                             </div>
                             <Button type="submit" className="w-full" disabled={isLoading}>

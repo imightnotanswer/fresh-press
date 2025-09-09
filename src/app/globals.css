@@ -164,23 +164,45 @@
   }
 
   .cutting-edge-brand {
-    @apply text-white font-bold text-5xl sm:text-7xl lg:text-8xl xl:text-9xl tracking-tight;
+    @apply text-white font-bold text-3xl sm:text-4xl lg:text-5xl tracking-tight;
     font-family: 'TAY Yamas', 'Times New Roman', serif;
     text-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
-    transition: all 0.3s ease;
+    transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), color 0.3s ease;
     max-width: 100%;
     overflow: hidden;
     white-space: nowrap;
     color: #E6F4EF;
   }
 
+  /* Keep brand at full size when scrolled */
   .cutting-edge-header.scrolled .cutting-edge-brand {
-    @apply text-2xl sm:text-3xl lg:text-4xl;
+    /* Keep the same size when scrolled */
   }
 
   .cutting-edge-brand:hover {
     @apply text-gray-300;
     transform: scale(1.05);
+  }
+
+  /* Brand scaler for smooth pre->post transition */
+  .brand-scaler {
+    transform-origin: center top;
+    transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .cutting-edge-header:not(.scrolled) .brand-scaler {
+    transform: scale(1.45);
+  }
+
+  .cutting-edge-header.scrolled .brand-scaler {
+    transform: scale(1);
+  }
+
+  /* Mobile tweak: raise brand slightly when pre-transition so it doesn't overflow */
+  @media (max-width: 640px) {
+    .cutting-edge-header:not(.scrolled) .brand-scaler {
+      transform: translateY(-6px) scale(1.45);
+    }
   }
 
   .cutting-edge-logo {
@@ -343,7 +365,7 @@
     }
 
     .cutting-edge-brand {
-      font-size: 2.5rem;
+      font-size: 2rem;
       line-height: 1.1;
     }
 
@@ -371,15 +393,17 @@
   /* Large screen optimizations */
   @media (min-width: 1280px) {
     .cutting-edge-brand {
-      font-size: 6rem;
-      line-height: 0.9;
+      font-size: 4.25rem;
+      /* 68px */
+      line-height: 1;
     }
   }
 
   @media (min-width: 1536px) {
     .cutting-edge-brand {
-      font-size: 7rem;
-      line-height: 0.85;
+      font-size: 4.5rem;
+      /* 72px */
+      line-height: 1;
     }
   }
 

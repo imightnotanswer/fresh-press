@@ -21,8 +21,16 @@ interface UserProfile {
 
 interface LikedPost {
     post_id: string;
-    post_type: string;
+    post_type: "media" | "review" | string;
     created_at: string;
+    post?: {
+        _id: string;
+        _type: string;
+        title?: string;
+        slug?: { current?: string };
+        artist?: { name?: string } | null;
+        coverUrl?: string | null;
+    } | null;
 }
 
 export default function ProfilePage() {
@@ -146,26 +154,33 @@ export default function ProfilePage() {
                             </div>
                         ) : (
                             <div className="grid gap-4">
-                                {likedPosts.map((post) => (
-                                    <div
-                                        key={`${post.post_type}-${post.post_id}`}
-                                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
-                                    >
-                                        <div>
-                                            <h3 className="font-medium text-gray-900 capitalize">
-                                                {post.post_type}
-                                            </h3>
-                                            <p className="text-sm text-gray-600">
-                                                Liked on {new Date(post.created_at).toLocaleDateString()}
-                                            </p>
+                                {likedPosts.map((item) => {
+                                    const slug = item.post?.slug?.current;
+                                    const href = slug
+                                        ? `/${item.post_type}/${slug}`
+                                        : `/${item.post_type}`;
+                                    return (
+                                        <div
+                                            key={`${item.post_type}-${item.post_id}`}
+                                            className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+                                        >
+                                            <div>
+                                                <h3 className="font-medium text-gray-900">
+                                                    {item.post?.title || item.post_type}
+                                                </h3>
+                                                <p className="text-sm text-gray-600">
+                                                    {item.post?.artist?.name ? (
+                                                        <>by {item.post.artist.name} · </>
+                                                    ) : null}
+                                                    Liked on {new Date(item.created_at).toLocaleDateString()}
+                                                </p>
+                                            </div>
+                                            <Button variant="outline" size="sm" asChild>
+                                                <Link href={href}>View</Link>
+                                            </Button>
                                         </div>
-                                        <Button variant="outline" size="sm" asChild>
-                                            <Link href={`/${post.post_type}s/${post.post_id}`}>
-                                                View Post
-                                            </Link>
-                                        </Button>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         )}
                     </CardContent>

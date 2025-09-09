@@ -21,9 +21,17 @@ export async function GET(request: NextRequest) {
             .eq("id", session.user.id)
             .single();
 
+        // If the profile row doesn't exist or any select error occurs, treat as non-admin
         if (error) {
-            console.error("Error checking admin status:", error);
-            return NextResponse.json({ error: "Failed to check admin status" }, { status: 500 });
+            console.warn("Admin check: profile not found or error, defaulting to non-admin:", error?.code || error);
+            return NextResponse.json({
+                isAdmin: false,
+                user: {
+                    id: session.user.id,
+                    email: session.user.email,
+                    name: session.user.name
+                }
+            });
         }
 
         return NextResponse.json({

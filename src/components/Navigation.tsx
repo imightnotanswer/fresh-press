@@ -74,12 +74,14 @@ export default function Navigation() {
         return (
             <header className="cutting-edge-header">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="relative flex justify-between items-center h-20 sm:h-24 lg:h-28 z-50">
+                    <div className="relative flex justify-between items-center h-20 sm:h-24 lg:h-28 z-50 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]">
                         <div className="w-10"></div>
                         <div className="absolute left-1/2 transform -translate-x-1/2">
-                            <Link href="/" className="cutting-edge-brand">
-                                Fresh Press
-                            </Link>
+                            <div className="brand-scaler">
+                                <Link href="/" className="cutting-edge-brand">
+                                    Fresh Press
+                                </Link>
+                            </div>
                         </div>
                         <div className="hidden sm:flex items-center space-x-6 ml-auto">
                             <Link href="/newsletter" className="cutting-edge-nav">
@@ -99,7 +101,7 @@ export default function Navigation() {
         <header className={`cutting-edge-header ${isScrolled && !isMobile ? 'scrolled' : ''}`}>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Top Header - Brand and Actions */}
-                <div className={`relative flex justify-between items-center z-50 ${isScrolled ? 'h-12 sm:h-14 lg:h-16' : 'h-20 sm:h-24 lg:h-28'}`}>
+                <div className={`relative flex justify-between items-center z-50 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isScrolled ? 'h-12 sm:h-14 lg:h-20' : 'h-24 sm:h-28 lg:h-32'}`}>
                     {/* Left side - Hamburger menu (always visible on mobile, only when scrolled on desktop) */}
                     <div className={`${isMobile ? 'block' : (isScrolled ? 'block' : 'hidden')} w-10`}>
                         <button
@@ -120,9 +122,11 @@ export default function Navigation() {
 
                     {/* Center - Brand Logo */}
                     <div className="absolute left-1/2 transform -translate-x-1/2">
-                        <Link href="/" className="cutting-edge-brand">
-                            Fresh Press
-                        </Link>
+                        <div className="brand-scaler">
+                            <Link href="/" className="cutting-edge-brand">
+                                Fresh Press
+                            </Link>
+                        </div>
                     </div>
 
                     {/* Right side actions - Hidden on mobile, visible on desktop */}
@@ -138,7 +142,7 @@ export default function Navigation() {
                 </div>
 
                 {/* Bottom Header - Main Navigation collapses when scrolled */}
-                <div className={`${isMobile ? 'hidden' : 'block'} border-t border-gray-800 transition-all duration-300 ${isScrolled ? 'h-0 opacity-0 overflow-hidden' : 'h-10 opacity-100'} origin-top`}>
+                <div className={`${isMobile ? 'hidden' : 'block'} transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isScrolled ? 'h-0 opacity-0 overflow-hidden' : 'h-10 opacity-100'} origin-top`}>
                     <nav className="flex items-center justify-center h-12 px-2 space-x-8">
                         <Link
                             href="/reviews"
