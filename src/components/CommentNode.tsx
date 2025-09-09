@@ -83,7 +83,7 @@ export default function CommentNode({
                                     ) : (
                                         <div className="h-6 w-6 rounded-full" style={{ backgroundColor: (comment as any).avatar_color || '#e5e7eb' }} />
                                     )}
-                                    {comment.author_name || `User ${comment.user_id.slice(0, 8)}`}
+                                    {(comment as any).author_name || `User ${comment.user_id.slice(0, 8)}`}
                                 </Link>
                                 <span className="text-xs text-gray-500">
                                     {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
