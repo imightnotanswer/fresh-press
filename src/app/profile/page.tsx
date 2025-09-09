@@ -41,6 +41,7 @@ export default function ProfilePage() {
     const { data: session, status } = useSession();
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [likedPosts, setLikedPosts] = useState<LikedPost[]>([]);
+    const [comments, setComments] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -59,6 +60,7 @@ export default function ProfilePage() {
                 const data = await response.json();
                 setProfile(data.profile);
                 setLikedPosts(data.likes);
+                setComments(data.comments || []);
             }
         } catch (error) {
             console.error("Error fetching profile:", error);
@@ -147,17 +149,12 @@ export default function ProfilePage() {
                             <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => {
-                                    // Fisher-Yates shuffle for stable random order
-                                    const arr = [...likedPosts];
-                                    for (let i = arr.length - 1; i > 0; i -= 1) {
-                                        const j = Math.floor(Math.random() * (i + 1));
-                                        [arr[i], arr[j]] = [arr[j], arr[i]];
-                                    }
-                                    setLikedPosts(arr);
+                                onClick={async () => {
+                                    setLoading(true);
+                                    await fetchProfile();
                                 }}
                             >
-                                Shuffle
+                                Refresh
                             </Button>
                         </div>
                     </CardHeader>
@@ -200,6 +197,33 @@ export default function ProfilePage() {
                                         blurb: undefined,
                                     } as any;
                                     return <ReviewCard key={key} review={review} />;
+                                })}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
+                {/* Recent Comments */}
+                <Card className="mt-8">
+                    <CardHeader>
+                        <CardTitle>Recent Comments ({comments.length})</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {comments.length === 0 ? (
+                            <p className="text-gray-600">No comments yet.</p>
+                        ) : (
+                            <div className="space-y-3">
+                                {comments.map((c) => {
+                                    const href = `/${c.post_type}/${c.post_id}#comment-${c.id}`;
+                                    return (
+                                        <div key={c.id} className="p-3 border rounded">
+                                            <Link href={href} className="font-medium hover:underline">
+                                                View comment on {c.post_type}
+                                            </Link>
+                                            <div className="prose prose-sm max-w-none mt-1" dangerouslySetInnerHTML={{ __html: c.body }} />
+                                            <p className="text-xs text-gray-500 mt-1">{new Date(c.created_at).toLocaleString()}</p>
+                                        </div>
+                                    );
                                 })}
                             </div>
                         )}

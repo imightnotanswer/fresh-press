@@ -116,7 +116,19 @@ export async function GET(request: NextRequest) {
                 avatar_url: session.user.image,
                 is_public: true,
             },
-            likes: likedItems
+            likes: likedItems,
+            comments: await (async () => {
+                if (!supabase) return [];
+                const { data, error } = await supabase
+                    .from('comments')
+                    .select('id, post_id, post_type, created_at, body')
+                    .eq('user_id', userId)
+                    .eq('deleted', false)
+                    .order('created_at', { ascending: false })
+                    .limit(50);
+                if (error || !data) return [];
+                return data;
+            })()
         });
     } catch (error) {
         console.error("Error in profile GET API:", error);

@@ -68,8 +68,13 @@ export default function Comments({ postType, postId }: CommentsProps) {
             });
 
             if (response.ok) {
+                const created = await response.json();
                 setNewComment("");
-                fetchComments();
+                // Optimistic append at top-level
+                setComments((prev) => [
+                    { id: created.id, body: created.body, created_at: created.created_at, user_id: created.user_id, children: [] },
+                    ...prev,
+                ]);
                 toast({
                     title: "Comment posted",
                     description: "Your comment has been posted successfully.",
@@ -113,7 +118,9 @@ export default function Comments({ postType, postId }: CommentsProps) {
             });
 
             if (response.ok) {
-                fetchComments();
+                const created = await response.json();
+                // Re-fetch to merge into proper tree or optimistically place under parent
+                await fetchComments();
                 toast({
                     title: "Reply posted",
                     description: "Your reply has been posted successfully.",

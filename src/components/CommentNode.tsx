@@ -47,7 +47,7 @@ export default function CommentNode({
 
     return (
         <div className={`${depth > 0 ? "ml-4 border-l-2 border-gray-200 pl-4" : ""}`}>
-            <Card className="mb-2">
+            <Card className="mb-2" id={`comment-${comment.id}`}>
                 <CardContent className="p-4">
                     <div className="space-y-2">
                         <div className="flex items-center justify-between">
