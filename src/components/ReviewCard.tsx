@@ -23,8 +23,8 @@ interface ReviewCardProps {
 
 export default function ReviewCard({ review }: ReviewCardProps) {
     return (
-        <div className="cutting-edge-card">
-            <Link href={`/reviews/${review.slug.current}`}>
+        <div className="cutting-edge-card h-full flex flex-col">
+            <Link href={`/reviews/${review.slug.current}`} className="flex-1 flex flex-col">
                 <div className="aspect-square relative">
                     {review.coverUrl ? (
                         <Image
@@ -39,32 +39,28 @@ export default function ReviewCard({ review }: ReviewCardProps) {
                         </div>
                     )}
                 </div>
-                <div className="p-4 flex flex-col h-full">
-                    <div className="flex-1 flex flex-col space-y-3 min-h-28">
-                        <h3 className="cutting-edge-title line-clamp-2">{review.title}</h3>
-                        <p className="cutting-edge-artist">{review.artist.name}</p>
-                        {review.blurb && (
-                            <p className="cutting-edge-blurb line-clamp-3">{review.blurb}</p>
-                        )}
-                        <div className="flex items-center justify-between mt-auto">
-                            <p className="cutting-edge-date">
-                                {new Date(review.publishedAt).toLocaleDateString('en-US', {
-                                    month: 'numeric',
-                                    day: 'numeric',
-                                    year: 'numeric'
-                                })}
-                            </p>
-                            <div onClick={(e) => e.preventDefault()}>
-                                <LikeButton
-                                    postId={review._id}
-                                    postType="review"
-                                    showCount
-                                />
-                            </div>
-                        </div>
-                    </div>
+                <div className="p-4 flex-1 flex flex-col space-y-3 min-h-28">
+                    <h3 className="cutting-edge-title line-clamp-2">{review.title}</h3>
+                    <p className="cutting-edge-artist">{review.artist.name}</p>
+                    {review.blurb && (
+                        <p className="cutting-edge-blurb line-clamp-3">{review.blurb}</p>
+                    )}
                 </div>
             </Link>
+            <div className="px-4 py-3 border-t flex items-center justify-between">
+                <p className="cutting-edge-date">
+                    {new Date(review.publishedAt).toLocaleDateString('en-US', {
+                        month: 'numeric',
+                        day: 'numeric',
+                        year: 'numeric'
+                    })}
+                </p>
+                <LikeButton
+                    postId={review._id}
+                    postType="review"
+                    showCount
+                />
+            </div>
         </div>
     );
 }

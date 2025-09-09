@@ -131,7 +131,7 @@ function ProfilePageInner() {
                                     <h1 className="text-3xl font-bold text-gray-900 leading-tight">
                                         {profile.display_name || profile.username || ""}
                                     </h1>
-                                    <span className="inline-flex items-center rounded-full bg-black/80 text-white text-[10px] sm:text-xs leading-none px-2 py-0.5 h-5">
+                                    <span className="inline-flex items-center rounded-full bg-black/80 text-white text-[10px] sm:text-xs leading-none px-2 py-0.5 h-5 self-center sm:self-auto mx-auto sm:mx-0 w-auto max-w-max shrink-0">
                                         {profile.is_public ? "Public" : "Private"}
                                     </span>
                                 </div>

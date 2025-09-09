@@ -132,90 +132,86 @@ export default function MediaCard({ media }: MediaCardProps) {
     }, [isPlayingInline, youTubeId]);
 
     return (
-        <div className="cutting-edge-card">
-            <div className="aspect-video relative bg-gray-100 group overflow-hidden">
-                {thumbnailUrl ? (
-                    <Image
-                        src={thumbnailUrl}
-                        alt={media.title}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                        <div className="w-16 h-16 bg-black/20 rounded-full flex items-center justify-center group-hover:bg-black/30 transition-all">
-                            <Play className="w-8 h-8 text-black ml-1" />
-                        </div>
-                    </div>
-                )}
-                {/* Play overlay for video thumbnails */}
-                {hasVideo && !isPlayingInline && (
-                    <button
-                        type="button"
-                        onClick={handlePlayInline}
-                        className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center"
-                        aria-label="Play"
-                    >
-                        <div className="w-16 h-16 bg-white/90 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
-                            <Play className="w-8 h-8 text-black ml-1" />
-                        </div>
-                    </button>
-                )}
-
-                {hasVideo && isPlayingInline && (
-                    <div className="absolute inset-0 z-10">
-                        {youTubeId ? (
-                            <iframe
-                                ref={iframeRef}
-                                src={`https://www.youtube.com/embed/${youTubeId}?autoplay=1&mute=0&playsinline=1&controls=1&rel=0&modestbranding=1`}
-                                width="100%"
-                                height="100%"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                allowFullScreen
-                                className="w-full h-full rounded"
-                                title="Inline YouTube video"
-                            />
-                        ) : (
-                            <ReactPlayerDynamic
-                                ref={playerRef}
-                                url={media.videoUrl as string}
-                                width="100%"
-                                height="100%"
-                                playing
-                                muted
-                                controls
-                                onProgress={(state: any) => {
-                                    if (typeof state.playedSeconds === 'number') setPlayedSeconds(state.playedSeconds);
-                                }}
-                                onError={(e: unknown) => setInlineError('Playback error')}
-                            />
-                        )}
-                    </div>
-                )}
-            </div>
-            <Link href={buildDetailHref()}>
-                <div className="p-4 flex flex-col h-full">
-                    <div className="flex-1 flex flex-col space-y-3 min-h-28">
-                        <h3 className="cutting-edge-title line-clamp-2">{media.title}</h3>
-                        <p className="cutting-edge-artist">{media.artist.name}</p>
-                        {media.description && (
-                            <p className="cutting-edge-blurb line-clamp-3">{media.description}</p>
-                        )}
-                        <div className="flex items-center justify-between mt-auto">
-                            <p className="cutting-edge-date">
-                                {new Date(media.publishedAt).toLocaleDateString('en-US', {
-                                    month: 'numeric',
-                                    day: 'numeric',
-                                    year: 'numeric'
-                                })}
-                            </p>
-                            <div onClick={(e) => e.preventDefault()}>
-                                <LikeButton postId={media._id} postType="media" showCount />
+        <div className="cutting-edge-card h-full flex flex-col">
+            <Link href={buildDetailHref()} className="flex-1 flex flex-col">
+                <div className="aspect-video relative bg-gray-100 group overflow-hidden">
+                    {thumbnailUrl ? (
+                        <Image
+                            src={thumbnailUrl}
+                            alt={media.title}
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                            <div className="w-16 h-16 bg-black/20 rounded-full flex items-center justify-center group-hover:bg-black/30 transition-all">
+                                <Play className="w-8 h-8 text-black ml-1" />
                             </div>
                         </div>
-                    </div>
+                    )}
+                    {/* Play overlay for video thumbnails */}
+                    {hasVideo && !isPlayingInline && (
+                        <button
+                            type="button"
+                            onClick={handlePlayInline}
+                            className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center"
+                            aria-label="Play"
+                        >
+                            <div className="w-16 h-16 bg-white/90 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
+                                <Play className="w-8 h-8 text-black ml-1" />
+                            </div>
+                        </button>
+                    )}
+
+                    {hasVideo && isPlayingInline && (
+                        <div className="absolute inset-0 z-10">
+                            {youTubeId ? (
+                                <iframe
+                                    ref={iframeRef}
+                                    src={`https://www.youtube.com/embed/${youTubeId}?autoplay=1&mute=0&playsinline=1&controls=1&rel=0&modestbranding=1`}
+                                    width="100%"
+                                    height="100%"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                    allowFullScreen
+                                    className="w-full h-full rounded"
+                                    title="Inline YouTube video"
+                                />
+                            ) : (
+                                <ReactPlayerDynamic
+                                    ref={playerRef}
+                                    url={media.videoUrl as string}
+                                    width="100%"
+                                    height="100%"
+                                    playing
+                                    muted
+                                    controls
+                                    onProgress={(state: any) => {
+                                        if (typeof state.playedSeconds === 'number') setPlayedSeconds(state.playedSeconds);
+                                    }}
+                                    onError={(e: unknown) => setInlineError('Playback error')}
+                                />
+                            )}
+                        </div>
+                    )}
+                </div>
+                <div className="p-4 flex-1 flex flex-col space-y-3 min-h-28">
+                    <h3 className="cutting-edge-title line-clamp-2">{media.title}</h3>
+                    <p className="cutting-edge-artist">{media.artist.name}</p>
+                    {media.description && (
+                        <p className="cutting-edge-blurb line-clamp-3">{media.description}</p>
+                    )}
                 </div>
             </Link>
+            <div className="px-4 py-3 border-t flex items-center justify-between">
+                <p className="cutting-edge-date">
+                    {new Date(media.publishedAt).toLocaleDateString('en-US', {
+                        month: 'numeric',
+                        day: 'numeric',
+                        year: 'numeric'
+                    })}
+                </p>
+                <LikeButton postId={media._id} postType="media" showCount />
+            </div>
         </div>
     );
 }
