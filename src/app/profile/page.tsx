@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSession } from "next-auth/react";
 import { redirect, useSearchParams } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -38,7 +38,7 @@ interface LikedPost {
     } | null;
 }
 
-export default function ProfilePage() {
+function ProfilePageInner() {
     const { data: session, status } = useSession();
     const searchParams = useSearchParams();
     const requestedUserId = searchParams.get("userId");
@@ -248,5 +248,11 @@ export default function ProfilePage() {
     );
 }
 
-
+export default function ProfilePage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-gray-50 py-8" />}>
+            <ProfilePageInner />
+        </Suspense>
+    );
+}
 
