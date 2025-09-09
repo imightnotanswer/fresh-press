@@ -194,14 +194,14 @@ export default function MediaCard({ media }: MediaCardProps) {
                 )}
             </div>
             <Link href={buildDetailHref()}>
-                <div className="p-4">
-                    <div className="space-y-3">
+                <div className="p-4 flex flex-col h-full">
+                    <div className="flex-1 flex flex-col space-y-3 min-h-28">
                         <h3 className="cutting-edge-title line-clamp-2">{media.title}</h3>
                         <p className="cutting-edge-artist">{media.artist.name}</p>
                         {media.description && (
                             <p className="cutting-edge-blurb line-clamp-3">{media.description}</p>
                         )}
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between mt-auto">
                             <p className="cutting-edge-date">
                                 {new Date(media.publishedAt).toLocaleDateString('en-US', {
                                     month: 'numeric',

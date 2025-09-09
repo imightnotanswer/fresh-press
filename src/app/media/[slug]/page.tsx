@@ -82,7 +82,7 @@ export default async function MediaPage({ params, searchParams }: MediaPageProps
                         <div>
                             <div className="flex items-start justify-between gap-4">
                                 <h1 className="text-4xl font-bold text-gray-900 mb-2">{media.title}</h1>
-                                <LikeButton postId={media._id} postType="media" />
+                                <LikeButton postId={media._id} postType="media" showCount={true} />
                             </div>
                             <p className="text-xl text-gray-600 mb-4">
                                 by{" "}

@@ -39,14 +39,14 @@ export default function ReviewCard({ review }: ReviewCardProps) {
                         </div>
                     )}
                 </div>
-                <div className="p-4">
-                    <div className="space-y-3">
+                <div className="p-4 flex flex-col h-full">
+                    <div className="flex-1 flex flex-col space-y-3 min-h-28">
                         <h3 className="cutting-edge-title line-clamp-2">{review.title}</h3>
                         <p className="cutting-edge-artist">{review.artist.name}</p>
                         {review.blurb && (
                             <p className="cutting-edge-blurb line-clamp-3">{review.blurb}</p>
                         )}
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between mt-auto">
                             <p className="cutting-edge-date">
                                 {new Date(review.publishedAt).toLocaleDateString('en-US', {
                                     month: 'numeric',

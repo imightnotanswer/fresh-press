@@ -80,7 +80,7 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
                             <div>
                                 <div className="flex items-start justify-between gap-4">
                                     <h1 className="text-4xl font-bold text-gray-900 mb-2">{review.title}</h1>
-                                    <LikeButton postId={review._id} postType="review" />
+                                    <LikeButton postId={review._id} postType="review" showCount={true} />
                                 </div>
                                 <p className="text-xl text-gray-600 mb-4">
                                     by{" "}

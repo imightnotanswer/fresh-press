@@ -111,11 +111,11 @@ function ProfilePageInner() {
 
     return (
         <div className="min-h-screen bg-gray-50 py-8">
-            <div className="max-w-4xl mx-auto px-4">
+            <div className="w-full max-w-4xl mx-auto px-4">
                 {/* Profile Header */}
                 <Card className="mb-8">
                     <CardContent className="p-6">
-                        <div className="flex items-start gap-6">
+                        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
                             {profile.avatar_color ? (
                                 <div className="h-24 w-24 rounded-full" style={{ backgroundColor: profile.avatar_color }} />
                             ) : (
@@ -126,23 +126,23 @@ function ProfilePageInner() {
                                     </AvatarFallback>
                                 </Avatar>
                             )}
-                            <div className="flex-1">
-                                <div className="flex items-center gap-4 mb-2">
-                                    <h1 className="text-3xl font-bold text-gray-900">
+                            <div className="flex-1 min-w-0 text-center sm:text-left">
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-2 w-full">
+                                    <h1 className="text-3xl font-bold text-gray-900 leading-tight">
                                         {profile.display_name || profile.username || ""}
                                     </h1>
-                                    <Badge variant={profile.is_public ? "default" : "secondary"}>
+                                    <span className="inline-flex items-center rounded-full bg-black/80 text-white text-[10px] sm:text-xs leading-none px-2 py-0.5 h-5">
                                         {profile.is_public ? "Public" : "Private"}
-                                    </Badge>
+                                    </span>
                                 </div>
-                                <p className="text-gray-600 mb-2">@{profile.username}</p>
+                                <p className="text-gray-600 mb-2 break-words">@{profile.username}</p>
                                 {profile.bio && (
-                                    <p className="text-gray-700">{profile.bio}</p>
+                                    <p className="text-gray-700 break-words">{profile.bio}</p>
                                 )}
                             </div>
                             {profile?.id === session?.user?.id && (
-                                <Link href="/profile/edit">
-                                    <Button variant="outline" size="sm">
+                                <Link href="/profile/edit" className="self-center sm:self-auto sm:ml-auto">
+                                    <Button variant="outline" size="sm" className="whitespace-nowrap">
                                         <Settings className="h-4 w-4 mr-2" />
                                         Edit Profile
                                     </Button>
