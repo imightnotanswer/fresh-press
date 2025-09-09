@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import { randomUUID } from "crypto";
 import { supabaseServer as supabase } from "@/lib/supabase-server";
 
 export async function POST(request: NextRequest) {
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Create user in next_auth.users (generate id client-side to avoid missing DB defaults)
-        const newUserId = (globalThis as any).crypto?.randomUUID?.() || require("crypto").randomUUID();
+        const newUserId = (globalThis as any).crypto?.randomUUID?.() || randomUUID();
         const { data: user, error: createErr } = await supabase
             .schema("next_auth")
             .from("users")
