@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Navigation from "@/components/Navigation";
 import { sanity } from "@/lib/sanity";
 import { ALL_TAGS, ALL_MEDIA, buildMediaQuery } from "@/lib/groq";
 import MediaCard from "@/components/MediaCard";
@@ -99,7 +98,6 @@ export default function MediaPage() {
 
     return (
         <div className="min-h-screen bg-white">
-            <Navigation />
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 <div className="mb-8 text-center md:text-left">

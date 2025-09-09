@@ -3,7 +3,6 @@ import { sanity } from "@/lib/sanity";
 import { ALL_REVIEWS, ALL_MEDIA } from "@/lib/groq";
 import ReviewCard from "@/components/ReviewCard";
 import MediaCard from "@/components/MediaCard";
-import Navigation from "@/components/Navigation";
 
 async function getRecentReviews() {
   try {
@@ -41,8 +40,7 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Navigation */}
-      <Navigation />
+      {/* Navigation removed: now mounted in root layout */}
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
