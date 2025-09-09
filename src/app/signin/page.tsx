@@ -29,6 +29,7 @@ export default function SignInPage() {
         try {
             const result = await signIn("email", {
                 email,
+                callbackUrl: "/",
                 redirect: false,
             });
 
