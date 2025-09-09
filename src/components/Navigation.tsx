@@ -23,6 +23,7 @@ export default function Navigation() {
     const adminEmails = [
         "admin@freshlypressed.com", // Add your admin email here
         // Add more admin emails as needed
+        "imightnotanswer@gmail.com"
     ];
 
     const isAdmin = session?.user?.email && adminEmails.includes(session.user.email);
@@ -98,7 +99,7 @@ export default function Navigation() {
         <header className={`cutting-edge-header ${isScrolled && !isMobile ? 'scrolled' : ''}`}>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Top Header - Brand and Actions */}
-                <div className="relative flex justify-between items-center h-20 sm:h-24 lg:h-28 z-50">
+                <div className={`relative flex justify-between items-center z-50 ${isScrolled ? 'h-12 sm:h-14 lg:h-16' : 'h-20 sm:h-24 lg:h-28'}`}>
                     {/* Left side - Hamburger menu (always visible on mobile, only when scrolled on desktop) */}
                     <div className={`${isMobile ? 'block' : (isScrolled ? 'block' : 'hidden')} w-10`}>
                         <button
@@ -136,8 +137,8 @@ export default function Navigation() {
                     </div>
                 </div>
 
-                {/* Bottom Header - Main Navigation (keep height constant; animate scale/opacity to avoid layout thrash) */}
-                <div className={`${isMobile ? 'hidden' : 'block'} border-t border-gray-800 h-12 transition-all duration-300 ${isScrolled ? 'opacity-0 scale-y-0 pointer-events-none' : 'opacity-100 scale-y-100'} origin-top`}>
+                {/* Bottom Header - Main Navigation collapses when scrolled */}
+                <div className={`${isMobile ? 'hidden' : 'block'} border-t border-gray-800 transition-all duration-300 ${isScrolled ? 'h-0 opacity-0 overflow-hidden' : 'h-10 opacity-100'} origin-top`}>
                     <nav className="flex items-center justify-center h-12 px-2 space-x-8">
                         <Link
                             href="/reviews"
