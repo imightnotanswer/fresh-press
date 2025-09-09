@@ -138,11 +138,28 @@ export default function ProfilePage() {
 
                 {/* Liked Posts Section */}
                 <Card>
-                    <CardHeader>
+                    <CardHeader className="flex flex-row items-center justify-between gap-4">
                         <CardTitle className="flex items-center gap-2">
                             <Heart className="h-5 w-5 text-red-500" />
                             Liked Posts ({likedPosts.length})
                         </CardTitle>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                    // Fisher-Yates shuffle for stable random order
+                                    const arr = [...likedPosts];
+                                    for (let i = arr.length - 1; i > 0; i -= 1) {
+                                        const j = Math.floor(Math.random() * (i + 1));
+                                        [arr[i], arr[j]] = [arr[j], arr[i]];
+                                    }
+                                    setLikedPosts(arr);
+                                }}
+                            >
+                                Shuffle
+                            </Button>
+                        </div>
                     </CardHeader>
                     <CardContent>
                         {likedPosts.length === 0 ? (
@@ -157,7 +174,7 @@ export default function ProfilePage() {
                                 </Button>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                                 {likedPosts.map((item) => {
                                     if (!item.post) return null;
                                     const key = `${item.post_type}-${item.post_id}`;
