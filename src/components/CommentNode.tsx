@@ -23,6 +23,8 @@ interface CommentNodeProps {
     depth?: number;
     onReply?: (parentId: string, body: string) => void;
     onReload?: () => void;
+    onVote?: (id: string, newScore: number) => void;
+    onEdited?: (id: string, newBody: string, updatedAt?: string) => void;
 }
 
 export default function CommentNode({
@@ -31,7 +33,9 @@ export default function CommentNode({
     postId,
     depth = 0,
     onReply,
-    onReload
+    onReload,
+    onVote,
+    onEdited
 }: CommentNodeProps) {
     const stripHtml = (html: string) => html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ");
     const [isReplying, setIsReplying] = useState(false);
@@ -51,6 +55,7 @@ export default function CommentNode({
         if (res.ok && typeof data.score === 'number') {
             setScore(data.score);
             setUserVote(val);
+            onVote?.(comment.id, data.score);
         }
     };
 
@@ -136,6 +141,7 @@ export default function CommentNode({
                                             body: JSON.stringify({ id: comment.id, body: editText })
                                         });
                                         setIsEditing(false);
+                                        onEdited?.(comment.id, editText, new Date().toISOString());
                                         onReload?.();
                                     }}>Save</Button>
                                     <Button size="sm" variant="outline" onClick={() => { setIsEditing(false); setEditText(stripHtml(comment.body)); }}>Cancel</Button>
