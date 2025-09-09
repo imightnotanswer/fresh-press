@@ -69,6 +69,14 @@ export default function Navigation() {
         }
     }, [isScrolled, isMobile]);
 
+    // Edge case: if user scrolls back to the very top while the menu is open,
+    // ensure the hamburger menu closes and layout recenters
+    useEffect(() => {
+        if (!isScrolled) {
+            setIsMobileMenuOpen(false);
+        }
+    }, [isScrolled]);
+
     // Don't render until client-side
     if (!isClient) {
         return (
@@ -98,7 +106,7 @@ export default function Navigation() {
     }
 
     return (
-        <header className={`cutting-edge-header ${isScrolled && !isMobile ? 'scrolled' : ''}`}>
+        <header className={`cutting-edge-header ${isScrolled && !isMobile ? 'scrolled' : ''} ${isMobile ? 'fixed top-0 left-0 right-0 w-full' : ''}`}>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Top Header - Brand and Actions */}
                 <div className={`relative flex justify-between items-center z-50 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isScrolled ? 'h-12 sm:h-14 lg:h-20' : 'h-24 sm:h-28 lg:h-32'}`}>
@@ -169,14 +177,6 @@ export default function Navigation() {
                 <div className={`absolute top-full left-0 w-auto min-w-48 bg-black rounded-b-lg shadow-xl transition-all duration-300 z-30 -mt-px ${isMobileMenuOpen ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible -translate-y-2'}`}>
                     <nav className="flex flex-col py-2">
                         <Link
-                            href="/newsletter"
-                            className={`mobile-nav-item text-white text-sm font-medium uppercase tracking-wider transition-all duration-200 px-4 py-2 hover:bg-gray-800 mx-1 ${pathname.startsWith('/newsletter') ? 'text-gray-300 bg-gray-800' : ''}`}
-                            style={{ position: 'relative' }}
-                            onClick={() => setIsMobileMenuOpen(false)}
-                        >
-                            Newsletter
-                        </Link>
-                        <Link
                             href="/reviews"
                             className={`mobile-nav-item text-white text-sm font-medium uppercase tracking-wider transition-all duration-200 px-4 py-2 hover:bg-gray-800 mx-1 ${pathname.startsWith('/reviews') ? 'text-gray-300 bg-gray-800' : ''}`}
                             style={{ position: 'relative' }}
@@ -200,10 +200,7 @@ export default function Navigation() {
                         >
                             Contact
                         </Link>
-                        <div className="border-t border-gray-700 my-2"></div>
-                        <div className="px-4 py-2">
-                            <AuthButton />
-                        </div>
+                        {/* Intentionally omit Newsletter and Sign In from side menu */}
                     </nav>
                 </div>
 
@@ -218,3 +215,7 @@ export default function Navigation() {
         </header>
     );
 }
+
+// Spacer for fixed mobile header to avoid content jump
+// Rendered only on client via Navigation parent usage
+// (Removed MobileHeaderSpacer to avoid extra layout/compile issues)

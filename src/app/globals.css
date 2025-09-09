@@ -360,6 +360,12 @@
 
   /* Mobile-specific improvements */
   @media (max-width: 640px) {
+
+    /* Ensure content isn't hidden under fixed mobile header */
+    body {
+      padding-top: 6.5rem;
+    }
+
     .cutting-edge-header {
       padding: 0 1rem;
     }
