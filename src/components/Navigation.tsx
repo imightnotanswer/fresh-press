@@ -176,6 +176,16 @@ export default function Navigation() {
                 {/* Mobile Menu Dropdown - Shows when hamburger is clicked */}
                 <div className={`absolute top-full left-0 w-auto min-w-48 bg-black rounded-b-lg shadow-xl transition-all duration-300 z-30 -mt-px ${isMobileMenuOpen ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible -translate-y-2'}`}>
                     <nav className="flex flex-col py-2">
+                        {isMobile && (
+                            <Link
+                                href="/newsletter"
+                                className={`mobile-nav-item text-white text-sm font-medium uppercase tracking-wider transition-all duration-200 px-4 py-2 hover:bg-gray-800 mx-1 ${pathname.startsWith('/newsletter') ? 'text-gray-300 bg-gray-800' : ''}`}
+                                style={{ position: 'relative' }}
+                                onClick={() => setIsMobileMenuOpen(false)}
+                            >
+                                Newsletter
+                            </Link>
+                        )}
                         <Link
                             href="/reviews"
                             className={`mobile-nav-item text-white text-sm font-medium uppercase tracking-wider transition-all duration-200 px-4 py-2 hover:bg-gray-800 mx-1 ${pathname.startsWith('/reviews') ? 'text-gray-300 bg-gray-800' : ''}`}
@@ -200,7 +210,14 @@ export default function Navigation() {
                         >
                             Contact
                         </Link>
-                        {/* Intentionally omit Newsletter and Sign In from side menu */}
+                        {isMobile && (
+                            <div className="border-t border-gray-700 my-2"></div>
+                        )}
+                        {isMobile && (
+                            <div className="px-4 py-2">
+                                <AuthButton />
+                            </div>
+                        )}
                     </nav>
                 </div>
 

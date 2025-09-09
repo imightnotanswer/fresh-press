@@ -69,12 +69,7 @@ export default function AuthButton() {
                         <span>Profile</span>
                     </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                    <Link href="/profile" className="flex items-center">
-                        <Heart className="mr-2 h-4 w-4" />
-                        <span>Liked Posts</span>
-                    </Link>
-                </DropdownMenuItem>
+                {/* Liked Posts now merged into Profile page; remove extra item */}
                 {isAdmin && (
                     <DropdownMenuItem asChild>
                         <Link href="/admin" className="flex items-center">
