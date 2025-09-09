@@ -32,6 +32,8 @@ interface LikedPost {
         slug?: { current?: string };
         artist?: { name?: string } | null;
         coverUrl?: string | null;
+        publishedAt?: string;
+        videoUrl?: string;
     } | null;
 }
 
