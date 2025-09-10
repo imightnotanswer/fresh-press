@@ -49,6 +49,7 @@ interface CommentWithSeed {
     my_vote: number;
     avatar_url: string | null;
     avatar_color: string | null;
+    author_name: string;
     children: CommentWithSeed[];
 }
 

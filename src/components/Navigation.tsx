@@ -7,7 +7,7 @@ import { useSession } from "next-auth/react";
 import AuthButton from "./AuthButton";
 
 export default function Navigation() {
-    const { data: session, status } = useSession();
+    const { data: session } = useSession();
     const [isScrolled, setIsScrolled] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
@@ -27,7 +27,7 @@ export default function Navigation() {
         "imightnotanswer@gmail.com"
     ];
 
-    const isAdmin = session?.user?.email && adminEmails.includes(session.user.email);
+    // const isAdmin = session?.user?.email && adminEmails.includes(session.user.email);
 
     // Handle scroll detection with hysteresis to avoid flicker
     useEffect(() => {
