@@ -24,6 +24,7 @@ interface Comment {
     avatar_color?: string | null;
     username?: string;
     display_name?: string;
+    author_name?: string;
     updated_at?: string;
 }
 
@@ -173,8 +174,8 @@ export default function CommentNode({
                                     disabled={busy}
                                     onClick={() => vote(1)}
                                     className={`h-7 w-7 p-0 rounded-full transition-all duration-200 ${userVote === 1
-                                            ? 'bg-green-500 text-white hover:bg-green-600 shadow-lg'
-                                            : 'text-gray-400 hover:text-green-500 hover:bg-green-100'
+                                        ? 'bg-green-500 text-white hover:bg-green-600 shadow-lg'
+                                        : 'text-gray-400 hover:text-green-500 hover:bg-green-100'
                                         }`}
                                 >
                                     <ArrowUp className="h-3 w-3" />
@@ -186,8 +187,8 @@ export default function CommentNode({
                                     disabled={busy}
                                     onClick={() => vote(-1)}
                                     className={`h-7 w-7 p-0 rounded-full transition-all duration-200 ${userVote === -1
-                                            ? 'bg-red-500 text-white hover:bg-red-600 shadow-lg'
-                                            : 'text-gray-400 hover:text-red-500 hover:bg-red-100'
+                                        ? 'bg-red-500 text-white hover:bg-red-600 shadow-lg'
+                                        : 'text-gray-400 hover:text-red-500 hover:bg-red-100'
                                         }`}
                                 >
                                     <ArrowDown className="h-3 w-3" />
