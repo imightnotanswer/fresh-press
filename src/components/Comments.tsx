@@ -165,17 +165,25 @@ export default function Comments({ postType, postId }: CommentsProps) {
         setNewComment(""); // Clear input immediately
         setIsSubmitting(true);
 
-        // Get user's display name for optimistic comment
+        // Get user's display name and avatar color for optimistic comment
         let displayName = session.user.name || session.user.email?.split('@')[0] || 'User';
+        let avatarColor = (session.user as { avatar_color?: string }).avatar_color;
+
+
         try {
             const response = await fetch('/api/profile');
             if (response.ok) {
                 const profile = await response.json();
                 displayName = profile.username || displayName;
+                avatarColor = profile.avatar_color || avatarColor;
             }
         } catch (error) {
             console.log('Could not fetch profile for optimistic comment, using fallback');
         }
+
+        // Store the fetched data for use in replacement
+        const fetchedDisplayName = displayName;
+        const fetchedAvatarColor = avatarColor;
 
         // Create optimistic comment that appears instantly
         const tempId = `temp-${Date.now()}`;
@@ -186,14 +194,13 @@ export default function Comments({ postType, postId }: CommentsProps) {
             user_id: session.user.id,
             children: [],
             author_name: displayName,
-            avatar_url: session.user.image,
-            avatar_color: (session.user as { avatar_color?: string }).avatar_color,
+            avatar_color: avatarColor,
             score: 0,
             up_count: 0,
             down_count: 0,
             my_vote: 0,
             deleted: false,
-            isOptimistic: true // Flag to identify optimistic comments
+            isOptimistic: true // Flag to identify optimistic comment
         };
 
         // Add optimistic comment immediately
@@ -224,9 +231,8 @@ export default function Comments({ postType, postId }: CommentsProps) {
                             ? {
                                 ...created,
                                 children: [],
-                                author_name: created.author_name || session.user.name || session.user.email?.split('@')[0] || 'User',
-                                avatar_url: session.user.image,
-                                avatar_color: (session.user as { avatar_color?: string }).avatar_color,
+                                author_name: created.author_name || fetchedDisplayName,
+                                avatar_color: fetchedAvatarColor,
                                 score: 0,
                                 up_count: 0,
                                 down_count: 0,
@@ -272,17 +278,24 @@ export default function Comments({ postType, postId }: CommentsProps) {
     const handleReply = async (parentId: string, body: string) => {
         if (!session) return;
 
-        // Get user's display name for optimistic reply
+        // Get user's display name and avatar color for optimistic reply
         let displayName = session.user.name || session.user.email?.split('@')[0] || 'User';
+        let avatarColor = (session.user as { avatar_color?: string }).avatar_color;
+
         try {
             const response = await fetch('/api/profile');
             if (response.ok) {
                 const profile = await response.json();
                 displayName = profile.username || displayName;
+                avatarColor = profile.avatar_color || avatarColor;
             }
         } catch (error) {
             console.log('Could not fetch profile for optimistic reply, using fallback');
         }
+
+        // Store the fetched data for use in replacement
+        const fetchedDisplayName = displayName;
+        const fetchedAvatarColor = avatarColor;
 
         // Create optimistic reply that appears instantly
         const tempId = `temp-reply-${Date.now()}`;
@@ -294,8 +307,7 @@ export default function Comments({ postType, postId }: CommentsProps) {
             parent_id: parentId,
             children: [],
             author_name: displayName,
-            avatar_url: session.user.image,
-            avatar_color: (session.user as { avatar_color?: string }).avatar_color,
+            avatar_color: avatarColor,
             score: 0,
             up_count: 0,
             down_count: 0,
@@ -349,9 +361,8 @@ export default function Comments({ postType, postId }: CommentsProps) {
                                             ? {
                                                 ...created,
                                                 children: [],
-                                                author_name: created.author_name || session.user.name || session.user.email?.split('@')[0] || 'User',
-                                                avatar_url: session.user.image,
-                                                avatar_color: (session.user as { avatar_color?: string }).avatar_color,
+                                                author_name: created.author_name || fetchedDisplayName,
+                                                avatar_color: fetchedAvatarColor,
                                                 score: 0,
                                                 up_count: 0,
                                                 down_count: 0,
@@ -449,9 +460,9 @@ export default function Comments({ postType, postId }: CommentsProps) {
     }
 
     return (
-        <Card className="border-orange-200">
-            <CardHeader className="bg-gradient-to-r from-orange-50 to-white border-b border-orange-200">
-                <CardTitle className="text-orange-900">Comments ({comments.length})</CardTitle>
+        <Card className="border-black">
+            <CardHeader className="bg-gradient-to-r from-gray-50 to-white border-b border-black">
+                <CardTitle className="text-black">Comments ({comments.length})</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6 p-6">
                 {session ? (
@@ -460,12 +471,12 @@ export default function Comments({ postType, postId }: CommentsProps) {
                             placeholder="Write a comment..."
                             value={newComment}
                             onChange={(e) => setNewComment(e.target.value)}
-                            className="min-h-[100px] border-orange-200 focus:border-orange-400 focus:ring-orange-200"
+                            className="min-h-[100px] border-black focus:border-gray-600 focus:ring-gray-200"
                         />
                         <Button
                             type="submit"
                             disabled={isSubmitting || !newComment.trim()}
-                            className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg"
+                            className="bg-black hover:bg-gray-800 text-[#ddf0e0] px-6 py-2 rounded-lg"
                         >
                             {isSubmitting ? "Posting..." : "Post Comment"}
                         </Button>
@@ -475,7 +486,7 @@ export default function Comments({ postType, postId }: CommentsProps) {
                         <p className="text-gray-600 mb-4">Sign in to post comments</p>
                         <Button
                             onClick={() => window.location.href = "/api/auth/signin"}
-                            className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg"
+                            className="bg-black hover:bg-gray-800 text-[#ddf0e0] px-6 py-2 rounded-lg"
                         >
                             Sign In
                         </Button>

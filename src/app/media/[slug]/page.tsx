@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { sanity } from "@/lib/sanity";
-import { MEDIA_BY_SLUG } from "@/lib/groq";
+import { MEDIA_BY_SLUG, RELATED_MEDIA_BY_ARTIST } from "@/lib/groq";
 import Comments from "@/components/Comments";
 import AuthButton from "@/components/AuthButton";
 import VideoPlayer from "@/components/VideoPlayer";
@@ -11,6 +11,7 @@ import Image from "next/image";
 // Render plain iframe for YouTube links on the detail page
 import { getYouTubeId } from "@/lib/youtube";
 import LikeButton from "@/components/LikeButton";
+import MediaContent from "@/components/MediaContent";
 import { useState, useEffect } from "react";
 
 export const dynamic = 'force-dynamic';
@@ -34,8 +35,23 @@ async function getMedia(slug: string) {
     }
 }
 
+async function getRelatedMedia(artistId: string) {
+    try {
+        if (!sanity) {
+            console.error("Sanity client not configured");
+            return [];
+        }
+        const media = await sanity.fetch(RELATED_MEDIA_BY_ARTIST, { artistId });
+        return media || [];
+    } catch (error) {
+        console.error("Error fetching related media:", error);
+        return [];
+    }
+}
+
 export default function MediaPage({ params, searchParams }: MediaPageProps) {
     const [media, setMedia] = useState<any>(null);
+    const [relatedMedia, setRelatedMedia] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [seed, setSeed] = useState<{ count: number; liked: boolean }>({ count: 0, liked: false });
     const [playerUrl, setPlayerUrl] = useState<string>("");
@@ -78,7 +94,11 @@ export default function MediaPage({ params, searchParams }: MediaPageProps) {
                     }
                 } catch { }
 
+                // Fetch related media
+                const relatedData = await getRelatedMedia(mediaData.artist._id);
+
                 setMedia(mediaData);
+                setRelatedMedia(relatedData);
                 setPlayerUrl(processedPlayerUrl);
             } catch (error) {
                 console.error("Error loading media data:", error);
@@ -136,6 +156,7 @@ export default function MediaPage({ params, searchParams }: MediaPageProps) {
                                     postId={media._id}
                                     postType="media"
                                     showCount={true}
+                                    hideLabel={true}
                                     initialCount={seed.count}
                                     initialLiked={seed.liked}
                                 />
@@ -156,9 +177,30 @@ export default function MediaPage({ params, searchParams }: MediaPageProps) {
 
                         {/* Description */}
                         {media.description && (
-                            <div className="prose prose-lg max-w-none">
-                                <p className="text-gray-700 leading-relaxed">{media.description}</p>
-                            </div>
+                            <MediaContent
+                                description={media.description}
+                                moreBySection={relatedMedia.length > 0 ? (
+                                    <div className="bg-white rounded-lg p-6 shadow-sm border border-black">
+                                        <h3 className="text-lg font-semibold text-black mb-4">
+                                            More by {media.artist.name}
+                                        </h3>
+                                        <div className="space-y-3">
+                                            {relatedMedia.map((related: any) => (
+                                                <Link
+                                                    key={related._id}
+                                                    href={`/media/${related.slug.current}`}
+                                                    className="block p-3 rounded-lg hover:bg-gray-50 transition-colors border border-gray-200"
+                                                >
+                                                    <h4 className="font-medium text-gray-900">{related.title}</h4>
+                                                    <p className="text-sm text-gray-500">
+                                                        {new Date(related.publishedAt).toLocaleDateString()}
+                                                    </p>
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ) : undefined}
+                            />
                         )}
                     </div>
 

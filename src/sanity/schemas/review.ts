@@ -9,6 +9,21 @@ export default defineType({
         defineField({ name: "cover", type: "image", options: { hotspot: true } }),
         defineField({ name: "artistSiteUrl", type: "url" }),
         defineField({ name: "albumUrl", type: "url", title: "Album Link" }),
+        defineField({
+            name: "audioFile",
+            type: "file",
+            title: "Audio File",
+            description: "MP3 file for the music player",
+            options: {
+                accept: "audio/mp3,audio/mpeg"
+            }
+        }),
+        defineField({
+            name: "songTitle",
+            type: "string",
+            title: "Song Title",
+            description: "Title of the specific song (if different from album title)"
+        }),
         defineField({ name: "blurb", type: "text" }),
         defineField({ name: "body", type: "array", of: [{ type: "block" }] }),
         defineField({ name: "tags", type: "array", of: [{ type: "reference", to: [{ type: "tag" }] }] }),

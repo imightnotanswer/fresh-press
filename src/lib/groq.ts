@@ -6,9 +6,10 @@ export const HOME_FEED = `*[_type in ["review","media"]] | order(publishedAt des
 }`;
 
 export const REVIEW_BY_SLUG = `*[_type=="review" && slug.current==$slug][0]{
-  _id, title, slug, publishedAt, releaseDate, blurb, artistSiteUrl, albumUrl,
+  _id, title, slug, publishedAt, releaseDate, blurb, artistSiteUrl, albumUrl, songTitle,
   artist->{_id, name, slug, image{asset->{url}}},
   cover{asset->{url}}, body,
+  audioFile{asset->{url, originalFilename}}
 }`;
 
 export const MEDIA_BY_SLUG = `*[_type=="media" && slug.current==$slug][0]{
@@ -18,6 +19,8 @@ export const MEDIA_BY_SLUG = `*[_type=="media" && slug.current==$slug][0]{
 }`;
 
 export const RELATED_BY_ARTIST = `*[_type=="review" && artist._ref==$artistId] | order(publishedAt desc) [0...5]{ _id, title, slug, publishedAt, releaseDate }`;
+
+export const RELATED_MEDIA_BY_ARTIST = `*[_type=="media" && artist._ref==$artistId] | order(publishedAt desc) [0...5]{ _id, title, slug, publishedAt, description }`;
 
 export const ARTIST_BY_SLUG = `*[_type=="artist" && slug.current==$slug][0]{
   _id, name, slug, website, image{asset->{url}}

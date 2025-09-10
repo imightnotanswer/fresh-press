@@ -10,16 +10,13 @@ import Link from "next/link";
 
 export default function EditProfilePage() {
     const { data: session, status } = useSession();
-    // Seed immediately from session to avoid visible pop-in, then hydrate from API
-    const sessionUsername = (session?.user as any)?.username || "";
-    const sessionColor = (session?.user as any)?.avatar_color || "#e5e7eb";
-    const [username, setUsername] = useState(sessionUsername);
+    const [username, setUsername] = useState("");
     const [bio, setBio] = useState("");
     const [isPublic, setIsPublic] = useState(true);
     const [oldPassword, setOldPassword] = useState("");
     const [newPassword, setNewPassword] = useState("");
     const [message, setMessage] = useState<string | null>(null);
-    const [avatarColor, setAvatarColor] = useState<string>(sessionColor);
+    const [avatarColor, setAvatarColor] = useState<string>("#e5e7eb");
     const [saving, setSaving] = useState(false);
     const [changing, setChanging] = useState(false);
 
@@ -28,13 +25,13 @@ export default function EditProfilePage() {
             const res = await fetch("/api/profile");
             if (res.ok) {
                 const data = await res.json();
-                setUsername(data.profile.username || sessionUsername || "");
+                setUsername(data.profile.username || "");
                 setBio(data.profile.bio || "");
-                setAvatarColor(data.profile.avatar_color || sessionColor || "#e5e7eb");
+                setAvatarColor(data.profile.avatar_color || "#e5e7eb");
                 setIsPublic(Boolean(data.profile.is_public));
             }
         })();
-    }, [status]);
+    }, []);
 
     const saveProfile = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -52,10 +49,6 @@ export default function EditProfilePage() {
                 else setMessage(data?.error || "Failed to update profile");
             } else {
                 setMessage("Profile saved");
-                try {
-                    // Notify header/avatar listeners immediately
-                    window.dispatchEvent(new CustomEvent('profile-updated', { detail: { avatar_color: avatarColor } }));
-                } catch { }
             }
         } finally {
             setSaving(false);

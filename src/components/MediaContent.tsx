@@ -1,44 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import PortableTextRenderer from "./PortableTextRenderer";
 
-interface ReviewContentProps {
-    content: any[];
-    maxPreviewLength?: number;
+interface MediaContentProps {
+    description: string;
     moreBySection?: React.ReactNode;
 }
 
-export default function ReviewContent({ content, maxPreviewLength = 400, moreBySection }: ReviewContentProps) {
+export default function MediaContent({ description, moreBySection }: MediaContentProps) {
     const [isExpanded, setIsExpanded] = useState(false);
-
-    // Extract text content for preview
-    const getTextContent = (body: any[]): string => {
-        if (!body || !Array.isArray(body)) return '';
-
-        let text = '';
-        for (const block of body) {
-            if (block._type === 'block' && block.children) {
-                for (const child of block.children) {
-                    if (child._type === 'span' && child.text) {
-                        text += child.text + ' ';
-                    }
-                }
-            }
-        }
-        return text.trim();
-    };
-
-    const fullText = getTextContent(content);
-    const shouldTruncate = fullText.length > maxPreviewLength;
-    const previewText = shouldTruncate ? fullText.substring(0, maxPreviewLength) + '...' : fullText;
+    const maxPreviewLength = 300;
+    const shouldTruncate = description.length > maxPreviewLength;
+    const previewText = shouldTruncate ? description.substring(0, maxPreviewLength) + '...' : description;
 
     if (!shouldTruncate) {
         // If content is short enough, show it all
         return (
             <div className="space-y-6">
                 <div className="prose prose-lg max-w-none">
-                    <PortableTextRenderer content={content} />
+                    <p className="text-gray-700 leading-relaxed">{description}</p>
                 </div>
                 {moreBySection && (
                     <div className="mt-6">
@@ -59,7 +39,7 @@ export default function ReviewContent({ content, maxPreviewLength = 400, moreByS
                 {isExpanded ? (
                     <div className="animate-in fade-in-0 slide-in-from-top-4 duration-700 ease-out">
                         <div className="transform transition-all duration-700 ease-out">
-                            <PortableTextRenderer content={content} />
+                            <p className="text-gray-700 leading-relaxed">{description}</p>
                         </div>
                         {/* More by section inside collapsible area */}
                         {moreBySection && (

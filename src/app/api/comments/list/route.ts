@@ -80,6 +80,7 @@ export async function GET(request: NextRequest) {
             if ((rpc as { error?: Error }).error) throw (rpc as { error: Error }).error;
             data = (rpc as { data: CommentWithSeed[] }).data || [];
         } catch (error) {
+            console.log('RPC failed, using manual build:', error);
             // RPC unavailable, using manual list build (which works correctly)
 
             // --- Fallback: fetch comments, scores, my votes, and build tree ---
@@ -125,9 +126,9 @@ export async function GET(request: NextRequest) {
                 up_count: scoreById[row.id]?.up_count || 0,
                 down_count: scoreById[row.id]?.down_count || 0,
                 my_vote: myVoteById[row.id] || 0,
-                avatar_url: null,
-                avatar_color: null,
-                author_name: `User ${row.user_id.slice(0, 8)}`,
+                avatar_url: null, // Will be updated with profile data below
+                avatar_color: null, // Will be updated with profile data below
+                author_name: `User ${row.user_id.slice(0, 8)}`, // Will be updated with profile data below
                 children: [],
             }));
         }
@@ -154,14 +155,15 @@ export async function GET(request: NextRequest) {
         // First pass: create map of all comments
         data?.forEach((comment: CommentWithSeed) => {
             const av = avatarById[comment.user_id] || { url: null, color: null, username: null };
-            commentMap.set(comment.id, {
+            const finalComment = {
                 ...comment,
                 avatar_url: av.url,
                 avatar_color: av.color,
                 // Always use current username from profile, never stored author_name
                 author_name: av.username || `User ${comment.user_id.slice(0, 8)}`,
                 children: []
-            });
+            };
+            commentMap.set(comment.id, finalComment);
         });
 
         // Second pass: build tree structure
