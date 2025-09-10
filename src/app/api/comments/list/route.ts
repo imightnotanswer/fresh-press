@@ -127,6 +127,7 @@ export async function GET(request: NextRequest) {
                 my_vote: myVoteById[row.id] || 0,
                 avatar_url: null,
                 avatar_color: null,
+                author_name: `User ${row.user_id.slice(0, 8)}`,
                 children: [],
             }));
         }
