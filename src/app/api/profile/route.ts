@@ -141,6 +141,23 @@ export async function GET(request: NextRequest) {
                     .limit(50);
                 if (error || !data) return [];
 
+                // Fetch comment scores
+                const commentIds = data.map((c: any) => c.id);
+                let commentScores: Record<string, { score: number, up_count: number, down_count: number }> = {};
+                if (commentIds.length && supabase) {
+                    const { data: scoreRows } = await supabase
+                        .from('comment_scores')
+                        .select('comment_id, score, up_count, down_count')
+                        .in('comment_id', commentIds);
+                    (scoreRows || []).forEach((s: any) => {
+                        commentScores[s.comment_id] = {
+                            score: s.score || 0,
+                            up_count: s.up_count || 0,
+                            down_count: s.down_count || 0
+                        };
+                    });
+                }
+
                 // Enrich with link paths using Sanity slugs
                 try {
                     if (sanity && data.length) {
@@ -176,10 +193,18 @@ export async function GET(request: NextRequest) {
                             ...c,
                             link: pathById[c.post_id] ? `${pathById[c.post_id]}#comment-${c.id}` : null,
                             target_title: titleById[c.post_id] || null,
+                            score: commentScores[c.id]?.score || 0,
+                            up_count: commentScores[c.id]?.up_count || 0,
+                            down_count: commentScores[c.id]?.down_count || 0,
                         }));
                     }
                 } catch { }
-                return data;
+                return data.map((c: any) => ({
+                    ...c,
+                    score: commentScores[c.id]?.score || 0,
+                    up_count: commentScores[c.id]?.up_count || 0,
+                    down_count: commentScores[c.id]?.down_count || 0,
+                }));
             })()
         });
     } catch (error) {

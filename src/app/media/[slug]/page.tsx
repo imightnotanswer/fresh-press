@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { sanity } from "@/lib/sanity";
@@ -9,7 +11,9 @@ import Image from "next/image";
 // Render plain iframe for YouTube links on the detail page
 import { getYouTubeId } from "@/lib/youtube";
 import LikeButton from "@/components/LikeButton";
-import { cookies } from "next/headers";
+import { useState, useEffect } from "react";
+
+export const dynamic = 'force-dynamic';
 
 interface MediaPageProps {
     params: Promise<{ slug: string }>;
@@ -30,42 +34,76 @@ async function getMedia(slug: string) {
     }
 }
 
-export default async function MediaPage({ params, searchParams }: MediaPageProps) {
-    const { slug } = await params;
-    const sp = searchParams ? await searchParams : undefined;
-    const media = await getMedia(slug);
+export default function MediaPage({ params, searchParams }: MediaPageProps) {
+    const [media, setMedia] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const [seed, setSeed] = useState<{ count: number; liked: boolean }>({ count: 0, liked: false });
+    const [playerUrl, setPlayerUrl] = useState<string>("");
+
+    useEffect(() => {
+        async function loadData() {
+            try {
+                setLoading(true);
+                const resolvedParams = await params;
+                const resolvedSearchParams = searchParams ? await searchParams : undefined;
+                const mediaData = await getMedia(resolvedParams.slug);
+
+                if (!mediaData) {
+                    notFound();
+                    return;
+                }
+
+                // Process player URL with search params
+                let processedPlayerUrl = mediaData.videoUrl as string;
+                const tParam = (resolvedSearchParams?.["t"] as string | undefined) ?? undefined;
+                const vParam = (resolvedSearchParams?.["v"] as string | undefined) ?? (resolvedSearchParams?.["vol"] as string | undefined) ?? undefined;
+                if (tParam) {
+                    const sep = processedPlayerUrl.includes('?') ? '&' : '?';
+                    processedPlayerUrl = `${processedPlayerUrl}${sep}t=${encodeURIComponent(tParam)}`;
+                }
+                if (vParam) {
+                    const sep = processedPlayerUrl.includes('?') ? '&' : '?';
+                    processedPlayerUrl = `${processedPlayerUrl}${sep}v=${encodeURIComponent(vParam)}`;
+                }
+
+                // Fetch like data
+                try {
+                    const res = await fetch(`/api/likes/batch?type=media&ids=${encodeURIComponent(mediaData._id)}`, { cache: "no-store" });
+                    if (res.ok) {
+                        const { counts, liked } = await res.json();
+                        setSeed({
+                            count: counts?.[0]?.like_count ?? 0,
+                            liked: Array.isArray(liked) ? liked.some((r: any) => r.post_id === mediaData._id) : false
+                        });
+                    }
+                } catch { }
+
+                setMedia(mediaData);
+                setPlayerUrl(processedPlayerUrl);
+            } catch (error) {
+                console.error("Error loading media data:", error);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        loadData();
+    }, [params, searchParams]);
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <p className="text-gray-500 text-lg">Loading media...</p>
+            </div>
+        );
+    }
 
     if (!media) {
         notFound();
     }
 
-    // Read search params (?t=, ?v=) directly and pass through to the player URL
-    let playerUrl = media.videoUrl as string;
-    const tParam = (sp?.["t"] as string | undefined) ?? undefined;
-    const vParam = (sp?.["v"] as string | undefined) ?? (sp?.["vol"] as string | undefined) ?? undefined;
-    if (tParam) {
-        const sep = playerUrl.includes('?') ? '&' : '?';
-        playerUrl = `${playerUrl}${sep}t=${encodeURIComponent(tParam)}`;
-    }
-    if (vParam) {
-        const sep = playerUrl.includes('?') ? '&' : '?';
-        playerUrl = `${playerUrl}${sep}v=${encodeURIComponent(vParam)}`;
-    }
-
-    // Seed like count/liked state for first paint on detail page
-    let seed = { count: 0, liked: false } as { count: number; liked: boolean };
-    try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/likes/batch?type=media&ids=${encodeURIComponent(media._id)}`, { cache: "no-store", headers: { cookie: cookies().toString() } });
-        if (res.ok) {
-            const { counts, liked } = await res.json();
-            seed.count = counts?.[0]?.like_count ?? 0;
-            seed.liked = Array.isArray(liked) ? liked.some((r: any) => r.post_id === media._id) : false;
-        }
-    } catch { }
-
     return (
         <div className="min-h-screen bg-gray-50">
-
             <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="space-y-8">
                     {/* Use plain iframe for YouTube; fallback to VideoPlayer for others */}
@@ -74,7 +112,7 @@ export default async function MediaPage({ params, searchParams }: MediaPageProps
                             {getYouTubeId(media.videoUrl) ? (
                                 <div className="relative aspect-video">
                                     <iframe
-                                        src={`https://www.youtube.com/embed/${getYouTubeId(media.videoUrl)}${tParam ? `?start=${encodeURIComponent(String(tParam))}` : ''}`}
+                                        src={`https://www.youtube.com/embed/${getYouTubeId(media.videoUrl)}${playerUrl.includes('t=') ? `?start=${encodeURIComponent(String(playerUrl.split('t=')[1]))}` : ''}`}
                                         width="100%"
                                         height="100%"
                                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -94,7 +132,13 @@ export default async function MediaPage({ params, searchParams }: MediaPageProps
                         <div>
                             <div className="flex items-start justify-between gap-4">
                                 <h1 className="text-4xl font-bold text-gray-900 mb-2">{media.title}</h1>
-                                <LikeButton postId={media._id} postType="media" showCount={true} initialCount={seed.count} initialLiked={seed.liked} />
+                                <LikeButton
+                                    postId={media._id}
+                                    postType="media"
+                                    showCount={true}
+                                    initialCount={seed.count}
+                                    initialLiked={seed.liked}
+                                />
                             </div>
                             <p className="text-xl text-gray-600 mb-4">
                                 by{" "}
@@ -125,5 +169,3 @@ export default async function MediaPage({ params, searchParams }: MediaPageProps
         </div>
     );
 }
-
-

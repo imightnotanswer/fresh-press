@@ -172,34 +172,28 @@ export async function DELETE(request: NextRequest) {
         const id = searchParams.get('id');
         if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
+        // Verify ownership
         const { data: existing } = await supabaseAdmin
             .from('comments')
-            .select('id, user_id')
+            .select('id, user_id, parent_id')
             .eq('id', id)
             .single();
         if (!existing || existing.user_id !== session.user.id) {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
-        const { data, error } = await supabaseAdmin
-            .from('comments')
-            .update({
-                deleted: true,
-                author_name: '[removed]',
-                body: '[deleted]',
-                content: '[deleted]',
-                updated_at: new Date().toISOString(),
-            })
-            .eq('id', id)
-            .select('*')
-            .single();
+        // Call the atomic RPC that handles all deletion logic
+        const { data, error } = await supabaseAdmin.rpc('delete_comment_apply', {
+            p_comment_id: id
+        });
 
         if (error) {
-            console.error('Error deleting comment:', error);
+            console.error('Error in delete_comment_apply RPC:', error);
             return NextResponse.json({ error: 'Failed to delete comment' }, { status: 500 });
         }
 
-        return NextResponse.json(data);
+        // Return the patch information
+        return NextResponse.json({ id, ...data });
     } catch (error) {
         console.error('Error in comments DELETE API:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

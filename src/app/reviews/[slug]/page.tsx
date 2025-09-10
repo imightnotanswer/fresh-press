@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -9,8 +11,9 @@ import AuthButton from "@/components/AuthButton";
 import ReviewContent from "@/components/ReviewContent";
 import ClickableImage from "@/components/ClickableImage";
 import LikeButton from "@/components/LikeButton";
-import { cookies } from "next/headers";
+import { useState, useEffect } from "react";
 
+export const dynamic = 'force-dynamic';
 
 interface ReviewPageProps {
     params: Promise<{
@@ -46,31 +49,65 @@ async function getRelatedReviews(artistId: string) {
     }
 }
 
-export default async function ReviewPage({ params }: ReviewPageProps) {
-    const { slug } = await params;
-    const review = await getReview(slug);
+export default function ReviewPage({ params }: ReviewPageProps) {
+    const [review, setReview] = useState<any>(null);
+    const [relatedReviews, setRelatedReviews] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [seed, setSeed] = useState<{ count: number; liked: boolean }>({ count: 0, liked: false });
+
+    useEffect(() => {
+        async function loadData() {
+            try {
+                setLoading(true);
+                const resolvedParams = await params;
+                const reviewData = await getReview(resolvedParams.slug);
+
+                if (!reviewData) {
+                    notFound();
+                    return;
+                }
+
+                // Fetch like data
+                try {
+                    const res = await fetch(`/api/likes/batch?type=review&ids=${encodeURIComponent(reviewData._id)}`, { cache: "no-store" });
+                    if (res.ok) {
+                        const { counts, liked } = await res.json();
+                        setSeed({
+                            count: counts?.[0]?.like_count ?? 0,
+                            liked: Array.isArray(liked) ? liked.some((r: any) => r.post_id === reviewData._id) : false
+                        });
+                    }
+                } catch { }
+
+                // Fetch related reviews
+                const relatedData = await getRelatedReviews(reviewData.artist._id);
+
+                setReview(reviewData);
+                setRelatedReviews(relatedData);
+            } catch (error) {
+                console.error("Error loading review data:", error);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        loadData();
+    }, [params]);
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <p className="text-gray-500 text-lg">Loading review...</p>
+            </div>
+        );
+    }
 
     if (!review) {
         notFound();
     }
 
-
-    // Seed like count/liked state for first paint on detail page
-    let seed = { count: 0, liked: false } as { count: number; liked: boolean };
-    try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/likes/batch?type=review&ids=${encodeURIComponent(review._id)}`, { cache: "no-store", headers: { cookie: cookies().toString() } });
-        if (res.ok) {
-            const { counts, liked } = await res.json();
-            seed.count = counts?.[0]?.like_count ?? 0;
-            seed.liked = Array.isArray(liked) ? liked.some((r: any) => r.post_id === review._id) : false;
-        }
-    } catch { }
-
-    const relatedReviews = await getRelatedReviews(review.artist._id);
-
     return (
         <div className="min-h-screen bg-gray-50">
-
             <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Main Content */}
@@ -92,7 +129,13 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
                             <div>
                                 <div className="flex items-start justify-between gap-4">
                                     <h1 className="text-4xl font-bold text-gray-900 mb-2">{review.title}</h1>
-                                    <LikeButton postId={review._id} postType="review" showCount={true} initialCount={seed.count} initialLiked={seed.liked} />
+                                    <LikeButton
+                                        postId={review._id}
+                                        postType="review"
+                                        showCount={true}
+                                        initialCount={seed.count}
+                                        initialLiked={seed.liked}
+                                    />
                                 </div>
                                 <p className="text-xl text-gray-600 mb-4">
                                     by{" "}
@@ -108,12 +151,10 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
                                 </p>
                             </div>
 
-
                             {/* Seamless Review Reading */}
                             {review.body && (
                                 <ReviewContent content={review.body} maxPreviewLength={300} />
                             )}
-
                         </div>
 
                         {/* Comments */}
@@ -153,5 +194,3 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
         </div>
     );
 }
-
-

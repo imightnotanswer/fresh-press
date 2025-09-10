@@ -18,36 +18,64 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: "Missing postType or postId" }, { status: 400 });
         }
 
-        const { data, error } = await supabase
-            .from("comments")
-            .select("*")
-            .eq("post_type", postType)
-            .eq("post_id", postId)
-            .eq("deleted", false)
-            .order("created_at", { ascending: true });
+        // Prefer RPC that returns comments + counts + my_vote for correct first paint
+        let data: any[] | null = null;
+        try {
+            const rpc = await supabase.rpc('comments_for_post_with_user', {
+                p_post_id: postId,
+                p_type: postType,
+                p_user_id: session?.user?.id || '',
+                p_max: 1000,
+            });
+            if ((rpc as any).error) throw (rpc as any).error;
+            data = (rpc as any).data || [];
+        } catch (rpcErr) {
+            // RPC unavailable, using manual list build (which works correctly)
 
-        if (error) {
-            console.error("Error fetching comments:", error);
-            return NextResponse.json({ error: "Failed to fetch comments" }, { status: 500 });
-        }
+            // --- Fallback: fetch comments, scores, my votes, and build tree ---
+            const { data: commentsRows, error: commentsErr } = await supabase
+                .from("comments")
+                .select("*")
+                .eq("post_type", postType)
+                .eq("post_id", postId)
+                .order("created_at", { ascending: true });
+            if (commentsErr) {
+                console.error("Error fetching comments:", commentsErr);
+                return NextResponse.json({ error: "Failed to fetch comments" }, { status: 500 });
+            }
 
-        // Fetch vote scores
-        const { data: voteRows } = await supabase
-            .from('comment_votes')
-            .select('comment_id, value');
-        const scoreById: Record<string, number> = {};
-        (voteRows || []).forEach((v: any) => {
-            scoreById[v.comment_id] = (scoreById[v.comment_id] || 0) + (Number(v.value) || 0);
-        });
+            // Fetch vote scores from comment_scores table (aggregated)
+            const commentIds = (commentsRows || []).map((c: any) => c.id);
+            const { data: scoreRows } = await supabase
+                .from('comment_scores')
+                .select('comment_id, score, up_count, down_count')
+                .in('comment_id', commentIds.length ? commentIds : ['-']);
+            const scoreById: Record<string, { score: number, up_count: number, down_count: number }> = {};
+            (scoreRows || []).forEach((s: any) => {
+                scoreById[s.comment_id] = {
+                    score: s.score || 0,
+                    up_count: s.up_count || 0,
+                    down_count: s.down_count || 0
+                };
+            });
 
-        // Current user's votes to hydrate highlight
-        const myVoteById: Record<string, number> = {};
-        if (session?.user?.id && data?.length) {
-            const { data: myVotes } = await supabase
-                .from('comment_votes')
-                .select('comment_id, value')
-                .eq('user_id', session.user.id);
-            (myVotes || []).forEach((v: any) => { myVoteById[v.comment_id] = Number(v.value) || 0; });
+            // Current user's votes
+            const myVoteById: Record<string, number> = {};
+            if (session?.user?.id && (commentsRows?.length || 0) > 0) {
+                const { data: myVotes } = await supabase
+                    .from('comment_votes')
+                    .select('comment_id, value')
+                    .eq('user_id', session.user.id);
+                (myVotes || []).forEach((v: any) => { myVoteById[v.comment_id] = Number(v.value) || 0; });
+            }
+
+            data = (commentsRows || []).map((row: any) => ({
+                ...row,
+                score: scoreById[row.id]?.score || 0,
+                up_count: scoreById[row.id]?.up_count || 0,
+                down_count: scoreById[row.id]?.down_count || 0,
+                my_vote: myVoteById[row.id] || 0,
+            }));
         }
 
         // Fetch avatars/colors for authors
@@ -64,26 +92,41 @@ export async function GET(request: NextRequest) {
         const rootComments: any[] = [];
 
         // First pass: create map of all comments
-        data?.forEach((comment) => {
+        data?.forEach((comment: any) => {
             const av = avatarById[comment.user_id] || { url: null, color: null };
-            commentMap.set(comment.id, { ...comment, avatar_url: av.url, avatar_color: av.color, score: scoreById[comment.id] || 0, user_vote: myVoteById[comment.id] || 0, children: [] });
+            commentMap.set(comment.id, { ...comment, avatar_url: av.url, avatar_color: av.color, children: [] });
         });
 
         // Second pass: build tree structure
-        data?.forEach((comment) => {
+        data?.forEach((comment: any) => {
             if (comment.parent_id) {
-                const parent = commentMap.get(comment.parent_id);
-                if (parent) {
-                    parent.children.push(commentMap.get(comment.id));
+                // Only add child comments if they're not deleted
+                if (!comment.deleted) {
+                    const parent = commentMap.get(comment.parent_id);
+                    if (parent) {
+                        parent.children.push(commentMap.get(comment.id));
+                    }
                 }
             } else {
+                // Always add root comments (parent comments), even if deleted
                 rootComments.push(commentMap.get(comment.id));
             }
         });
 
-        // Sort by score desc, then created_at asc at each level
+        // Sort by effective score (deleted = -1000000), then created_at asc at each level
         function sortTree(nodes: any[]) {
-            nodes.sort((a, b) => (b.score - a.score) || (new Date(a.created_at).getTime() - new Date(b.created_at).getTime()));
+            nodes.sort((a, b) => {
+                // Calculate effective score: deleted comments get -1000000
+                const scoreA = a.deleted ? -1000000 : (a.score || 0);
+                const scoreB = b.deleted ? -1000000 : (b.score || 0);
+
+                // Sort by effective score (higher first)
+                if (scoreB !== scoreA) {
+                    return scoreB - scoreA;
+                }
+                // Then by creation time (older first)
+                return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+            });
             nodes.forEach((n) => sortTree(n.children));
         }
         sortTree(rootComments);

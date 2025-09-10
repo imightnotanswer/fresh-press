@@ -8,7 +8,10 @@ export async function GET(req: NextRequest) {
         if (!supabase) return NextResponse.json({ error: "DB not configured" }, { status: 503 });
         const session = await getServerSession(authOptions);
         const { searchParams } = new URL(req.url);
-        const type = searchParams.get("type") || "media";
+        let type = searchParams.get("type") || "media";
+        // Normalize potential legacy/plural values
+        if (type === "reviews") type = "review";
+        if (type === "medias") type = "media";
         const idsParam = searchParams.get("ids") || ""; // comma separated uuids
         const ids = idsParam
             .split(",")
@@ -23,8 +26,7 @@ export async function GET(req: NextRequest) {
             const { data, error } = await supabase
                 .from("post_like_counts")
                 .select("post_id, like_count")
-                .in("post_id", ids as any)
-                .eq("post_type", type);
+                .in("post_id", ids as any);
             if (error) {
                 console.warn("post_like_counts unavailable; falling back to base likes", error);
             } else {
@@ -34,13 +36,23 @@ export async function GET(req: NextRequest) {
         if (!countRows.length) {
             const { data: rawCounts, error } = await supabase
                 .from("likes")
-                .select("post_id")
+                .select("post_id, post_type")
                 .eq("post_type", type)
                 .in("post_id", ids as any);
-            if (!error && rawCounts) {
+            if (!error && rawCounts && rawCounts.length) {
                 const map: Record<string, number> = {};
                 rawCounts.forEach((r: any) => { map[r.post_id] = (map[r.post_id] || 0) + 1; });
                 countRows = Object.entries(map).map(([post_id, like_count]) => ({ post_id, like_count } as any));
+            } else {
+                const { data: rawCountsAny } = await supabase
+                    .from("likes")
+                    .select("post_id")
+                    .in("post_id", ids as any);
+                if (rawCountsAny) {
+                    const map: Record<string, number> = {};
+                    rawCountsAny.forEach((r: any) => { map[r.post_id] = (map[r.post_id] || 0) + 1; });
+                    countRows = Object.entries(map).map(([post_id, like_count]) => ({ post_id, like_count } as any));
+                }
             }
         }
 
@@ -51,7 +63,6 @@ export async function GET(req: NextRequest) {
                 .from("likes")
                 .select("post_id")
                 .eq("user_id", session.user.id)
-                .eq("post_type", type)
                 .in("post_id", ids as any);
             if (likedErr) {
                 console.error("batch liked error", likedErr);
