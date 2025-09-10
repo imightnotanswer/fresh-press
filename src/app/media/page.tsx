@@ -1,16 +1,35 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useState, useEffect } from "react";
 import { sanity } from "@/lib/sanity";
 import { ALL_TAGS, ALL_MEDIA, buildMediaQuery } from "@/lib/groq";
 import MediaCard from "@/components/MediaCard";
 import FilterSortBar, { FilterSortOptions } from "@/components/FilterSortBar";
 
+// Type definitions
+interface Media {
+    _id: string;
+    title: string;
+    slug: { current: string };
+    artist: { name: string; slug: { current: string } };
+    coverUrl?: string;
+    publishedAt: string;
+    videoUrl?: string;
+    __seed?: { count: number; liked: boolean };
+}
+
+interface LikeData {
+    post_id: string;
+}
+
+interface CountData {
+    post_id: string;
+    like_count: number;
+}
+
 export default function MediaPage() {
-    const { data: session } = useSession();
-    const [media, setMedia] = useState<any[]>([]);
-    const [tags, setTags] = useState<{ name: string; slug: string }[]>([]);
+    const [media, setMedia] = useState<Media[]>([]);
+    const [, setTags] = useState<{ name: string; slug: string }[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterOptions, setFilterOptions] = useState<FilterSortOptions>({
         sortBy: 'newest',
@@ -34,8 +53,8 @@ export default function MediaPage() {
                     sanity.fetch(ALL_TAGS)
                 ]);
 
-                const ids = (mediaData || []).map((m: any) => m._id);
-                let seedMap: Record<string, { count: number; liked: boolean }> = {};
+                const ids = (mediaData || []).map((m: Media) => m._id);
+                const seedMap: Record<string, { count: number; liked: boolean }> = {};
                 try {
                     if (ids.length) {
                         const url = `/api/likes/batch?type=media&ids=${encodeURIComponent(ids.join(","))}`;
@@ -43,8 +62,8 @@ export default function MediaPage() {
                         if (res.ok) {
                             const { counts, liked } = await res.json();
                             const likeMap: Record<string, number> = {};
-                            const likedSet = new Set<string>((liked || []).map((r: any) => r.post_id));
-                            (counts || []).forEach((r: any) => {
+                            const likedSet = new Set<string>((liked || []).map((r: LikeData) => r.post_id));
+                            (counts || []).forEach((r: CountData) => {
                                 likeMap[r.post_id] = r.like_count ?? 0;
                             });
                             ids.forEach((id: string) => {
@@ -55,7 +74,7 @@ export default function MediaPage() {
                 } catch { }
 
                 // attach seeds for LikeButton
-                const withSeeds = (mediaData || []).map((m: any) => ({
+                const withSeeds = (mediaData || []).map((m: Media) => ({
                     ...m,
                     __seed: seedMap[m._id] || { count: 0, liked: false }
                 }));
@@ -94,8 +113,8 @@ export default function MediaPage() {
                     sortBy: filterOptions.sortBy
                 }));
                 // Re-attach seeds for filtered result
-                const ids = (mediaData || []).map((m: any) => m._id);
-                let seedMap: Record<string, { count: number; liked: boolean }> = {};
+                const ids = (mediaData || []).map((m: Media) => m._id);
+                const seedMap: Record<string, { count: number; liked: boolean }> = {};
                 try {
                     if (ids.length) {
                         const url = `/api/likes/batch?type=media&ids=${encodeURIComponent(ids.join(","))}`;
@@ -103,13 +122,13 @@ export default function MediaPage() {
                         if (res.ok) {
                             const { counts, liked } = await res.json();
                             const likeMap: Record<string, number> = {};
-                            const likedSet = new Set<string>((liked || []).map((r: any) => r.post_id));
-                            (counts || []).forEach((r: any) => { likeMap[r.post_id] = r.like_count ?? 0; });
+                            const likedSet = new Set<string>((liked || []).map((r: LikeData) => r.post_id));
+                            (counts || []).forEach((r: CountData) => { likeMap[r.post_id] = r.like_count ?? 0; });
                             ids.forEach((id: string) => { seedMap[id] = { count: likeMap[id] ?? 0, liked: likedSet.has(id) }; });
                         }
                     }
                 } catch { }
-                const withSeeds = (mediaData || []).map((m: any) => ({ ...m, __seed: seedMap[m._id] || { count: 0, liked: false } }));
+                const withSeeds = (mediaData || []).map((m: Media) => ({ ...m, __seed: seedMap[m._id] || { count: 0, liked: false } }));
                 setMedia(withSeeds);
             } catch (error) {
                 console.error("Error fetching filtered media:", error);
@@ -172,8 +191,8 @@ export default function MediaPage() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 gap-4 place-items-center sm:gap-5 md:grid-cols-2 md:gap-6 lg:grid-cols-3 xl:grid-cols-4">
-                        {media.map((mediaItem: any) => (
-                            <MediaCard key={mediaItem._id} media={mediaItem} initialLikeCount={mediaItem.likeCount ?? undefined} initialLiked={mediaItem.initialLiked ?? false} />
+                        {media.map((mediaItem: Media) => (
+                            <MediaCard key={mediaItem._id} media={mediaItem} />
                         ))}
                     </div>
                 )}

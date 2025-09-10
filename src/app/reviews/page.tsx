@@ -29,7 +29,7 @@ interface CountData {
 
 export default function ReviewsPage() {
     const [reviews, setReviews] = useState<Review[]>([]);
-    const [tags, setTags] = useState<{ name: string; slug: string }[]>([]);
+    const [, setTags] = useState<{ name: string; slug: string }[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterOptions, setFilterOptions] = useState<FilterSortOptions>({
         sortBy: 'newest',

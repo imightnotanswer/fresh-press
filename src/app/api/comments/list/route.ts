@@ -75,9 +75,9 @@ export async function GET(request: NextRequest) {
                 p_user_id: session?.user?.id || '',
                 p_max: 1000,
             });
-            if ((rpc as { error?: any }).error) throw (rpc as { error: any }).error;
+            if ((rpc as { error?: Error }).error) throw (rpc as { error: Error }).error;
             data = (rpc as { data: CommentWithSeed[] }).data || [];
-        } catch (rpcErr) {
+        } catch {
             // RPC unavailable, using manual list build (which works correctly)
 
             // --- Fallback: fetch comments, scores, my votes, and build tree ---
@@ -123,6 +123,9 @@ export async function GET(request: NextRequest) {
                 up_count: scoreById[row.id]?.up_count || 0,
                 down_count: scoreById[row.id]?.down_count || 0,
                 my_vote: myVoteById[row.id] || 0,
+                avatar_url: null,
+                avatar_color: null,
+                children: [],
             }));
         }
 
@@ -152,12 +155,18 @@ export async function GET(request: NextRequest) {
                 if (!comment.deleted) {
                     const parent = commentMap.get(comment.parent_id);
                     if (parent) {
-                        parent.children.push(commentMap.get(comment.id));
+                        const child = commentMap.get(comment.id);
+                        if (child) {
+                            parent.children.push(child);
+                        }
                     }
                 }
             } else {
                 // Always add root comments (parent comments), even if deleted
-                rootComments.push(commentMap.get(comment.id));
+                const rootComment = commentMap.get(comment.id);
+                if (rootComment) {
+                    rootComments.push(rootComment);
+                }
             }
         });
 

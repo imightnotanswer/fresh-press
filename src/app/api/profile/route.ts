@@ -5,6 +5,60 @@ import { supabaseServer as supabase } from "@/lib/supabase-server";
 import { sanity } from "@/lib/sanity";
 import { groq } from "next-sanity";
 
+// Type definitions
+interface UserProfile {
+    id: string;
+    username: string;
+    display_name: string;
+    bio: string | null;
+    avatar_url: string | null;
+    avatar_color: string | null;
+    is_public: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
+interface LikedPost {
+    post_id: string;
+    post_type: string;
+    created_at: string;
+    post?: {
+        _id: string;
+        _type: string;
+        title?: string;
+        slug?: { current?: string };
+        artist?: { name?: string } | null;
+        coverUrl?: string | null;
+        publishedAt?: string;
+        videoUrl?: string;
+    } | null;
+}
+
+interface Comment {
+    id: string;
+    user_id: string;
+    post_type: string;
+    post_id: string;
+    body: string;
+    created_at: string;
+    score?: number;
+    up_count?: number;
+    down_count?: number;
+    target_title?: string;
+    link?: string;
+}
+
+interface SanityDocument {
+    _id: string;
+    _type: string;
+    title?: string;
+    slug?: { current?: string };
+    artist?: { name?: string } | null;
+    coverUrl?: string | null;
+    publishedAt?: string;
+    videoUrl?: string;
+}
+
 export async function GET(request: NextRequest) {
     try {
         const session = await getServerSession(authOptions);
@@ -18,8 +72,8 @@ export async function GET(request: NextRequest) {
         const userId = searchParams.get("userId") || session.user.id;
 
         // Get user profile
-        let profile: any = null;
-        let profileError: any = null;
+        let profile: UserProfile | null = null;
+        let profileError: Error | null = null;
         if (supabase) {
             const { data, error } = await supabase
                 .from("user_profiles")
@@ -30,7 +84,7 @@ export async function GET(request: NextRequest) {
             profileError = error;
         }
 
-        if (profileError && profileError.code !== 'PGRST116') {
+        if (profileError && (profileError as any).code !== 'PGRST116') {
             console.error("Error fetching profile:", profileError);
             return NextResponse.json({ error: "Failed to fetch profile" }, { status: 500 });
         }
@@ -60,8 +114,8 @@ export async function GET(request: NextRequest) {
         }
 
         // Get user's liked posts with minimal post info for linking and counts
-        let likes: any[] | null = null;
-        let likesError: any = null;
+        let likes: LikedPost[] | null = null;
+        let likesError: Error | null = null;
         if (supabase) {
             const { data, error } = await supabase
                 .from("likes")
@@ -73,7 +127,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Enrich likes with minimal post data from Sanity so cards look like media/review pages
-        let likedItems = likes || [];
+        let likedItems: LikedPost[] = likes || [];
         if (sanity && likedItems.length > 0) {
             const reviewIds = likedItems.filter(l => l.post_type === "review").map(l => l.post_id);
             const mediaIds = likedItems.filter(l => l.post_type === "media").map(l => l.post_id);
@@ -93,16 +147,16 @@ export async function GET(request: NextRequest) {
                     : Promise.resolve([]),
             ]);
 
-            const byId: Record<string, any> = {};
-            [...reviewDocs, ...mediaDocs].forEach((d: any) => { byId[d._id] = d; });
+            const byId: Record<string, SanityDocument> = {};
+            [...reviewDocs, ...mediaDocs].forEach((d: SanityDocument) => { byId[d._id] = d; });
 
             // fetch counts for all liked posts in one go
-            let countsByKey: Record<string, number> = {};
+            const countsByKey: Record<string, number> = {};
             if (supabase && likedItems.length) {
                 const { data: likeRows } = await supabase
                     .from('likes')
                     .select('post_id, post_type');
-                (likeRows || []).forEach((r: any) => {
+                (likeRows || []).forEach((r: { post_id: string; post_type: string }) => {
                     const k = `${r.post_type}:${r.post_id}`;
                     countsByKey[k] = (countsByKey[k] || 0) + 1;
                 });
@@ -143,13 +197,13 @@ export async function GET(request: NextRequest) {
 
                 // Fetch comment scores
                 const commentIds = data.map((c: any) => c.id);
-                let commentScores: Record<string, { score: number, up_count: number, down_count: number }> = {};
+                const commentScores: Record<string, { score: number, up_count: number, down_count: number }> = {};
                 if (commentIds.length && supabase) {
                     const { data: scoreRows } = await supabase
                         .from('comment_scores')
                         .select('comment_id, score, up_count, down_count')
                         .in('comment_id', commentIds);
-                    (scoreRows || []).forEach((s: any) => {
+                    (scoreRows || []).forEach((s: { comment_id: string; score: number; up_count: number; down_count: number }) => {
                         commentScores[s.comment_id] = {
                             score: s.score || 0,
                             up_count: s.up_count || 0,
@@ -179,13 +233,13 @@ export async function GET(request: NextRequest) {
                         ]);
                         const pathById: Record<string, string> = {};
                         const titleById: Record<string, string> = {};
-                        (reviewDocs as any[]).forEach((d: any) => {
+                        (reviewDocs as SanityDocument[]).forEach((d: SanityDocument) => {
                             if (d?.slug?.current) pathById[d._id] = `/reviews/${d.slug.current}`;
                             const album = d?.title || "Review";
                             const artist = d?.artist?.name ? ` by ${d.artist.name}` : "";
                             titleById[d._id] = `${album}${artist}`;
                         });
-                        (mediaDocs as any[]).forEach((d: any) => {
+                        (mediaDocs as SanityDocument[]).forEach((d: SanityDocument) => {
                             if (d?.slug?.current) pathById[d._id] = `/media/${d.slug.current}`;
                             titleById[d._id] = d?.title || "Media";
                         });

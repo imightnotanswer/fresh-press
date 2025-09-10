@@ -16,6 +16,21 @@ interface Comment {
     user_id: string;
     children: Comment[];
     deleted?: boolean;
+    score?: number;
+    up_count?: number;
+    down_count?: number;
+    my_vote?: number;
+    avatar_url?: string | null;
+    avatar_color?: string | null;
+    username?: string;
+    display_name?: string;
+    updated_at?: string;
+}
+
+interface VoteResponse {
+    success: boolean;
+    newScore?: number;
+    error?: string;
 }
 
 interface CommentNodeProps {
@@ -48,8 +63,8 @@ export default function CommentNode({
     const [isExpanded, setIsExpanded] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [editText, setEditText] = useState(stripHtml(comment.body));
-    const [score, setScore] = useState((comment as any).score ?? 0);
-    const [userVote, setUserVote] = useState<number>((comment as any).my_vote ?? 0);
+    const [score, setScore] = useState(comment.score ?? 0);
+    const [userVote, setUserVote] = useState<number>(comment.my_vote ?? 0);
     const [busy, setBusy] = useState(false);
 
     // Check if current user owns this comment
@@ -85,7 +100,7 @@ export default function CommentNode({
             if (res.ok && typeof data.score === 'number') {
                 // snap to server score for determinism
                 setScore(data.score);
-                setUserVote((data.my_vote ?? next) as any);
+                setUserVote(data.my_vote ?? next);
                 onVote?.(comment.id, data.score);
             } else if (res.status === 401) {
                 window.location.href = '/signin';
@@ -131,20 +146,20 @@ export default function CommentNode({
                                 </div>
                             )}
                             <Link href={`/profile?userId=${comment.user_id}`} className="text-sm font-medium text-gray-900 inline-flex items-center gap-2 hover:text-blue-600 transition-colors duration-200">
-                                {(comment as any).avatar_url ? (
-                                    <img src={(comment as any).avatar_url as any} alt="avatar" className="h-6 w-6 rounded-full ring-2 ring-white shadow-sm" />
+                                {comment.avatar_url ? (
+                                    <img src={comment.avatar_url} alt="avatar" className="h-6 w-6 rounded-full ring-2 ring-white shadow-sm" />
                                 ) : (
-                                    <div className="h-6 w-6 rounded-full ring-2 ring-white shadow-sm" style={{ backgroundColor: (comment as any).avatar_color || '#e5e7eb' }} />
+                                    <div className="h-6 w-6 rounded-full ring-2 ring-white shadow-sm" style={{ backgroundColor: comment.avatar_color || '#e5e7eb' }} />
                                 )}
                                 {comment.deleted ? (
                                     <span className="italic text-gray-500">deleted</span>
                                 ) : (
-                                    (comment as any).author_name || `User ${comment.user_id.slice(0, 8)}`
+                                    comment.display_name || comment.username || `User ${comment.user_id.slice(0, 8)}`
                                 )}
                             </Link>
                             <span className="text-xs text-gray-500 font-mono">
                                 {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
-                                {(comment as any).updated_at && new Date((comment as any).updated_at).getTime() > new Date(comment.created_at).getTime() && (
+                                {comment.updated_at && new Date(comment.updated_at).getTime() > new Date(comment.created_at).getTime() && (
                                     <span className="ml-1">(edited)</span>
                                 )}
                             </span>

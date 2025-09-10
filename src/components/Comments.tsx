@@ -15,10 +15,23 @@ interface Comment {
     user_id: string;
     updated_at?: string;
     author_name?: string;
+    display_name?: string;
+    username?: string;
     score?: number;
+    up_count?: number;
+    down_count?: number;
+    my_vote?: number;
     parent_id?: string | null;
     deleted?: boolean;
     children: Comment[];
+    avatar_url?: string | null;
+    avatar_color?: string | null;
+}
+
+interface CreateCommentResponse {
+    success: boolean;
+    comment?: Comment;
+    error?: string;
 }
 
 interface CommentsProps {
@@ -65,7 +78,7 @@ export default function Comments({ postType, postId }: CommentsProps) {
         });
 
     const sortTree = (nodes: Comment[]) => {
-        nodes.sort((a: any, b: any) => {
+        nodes.sort((a: Comment, b: Comment) => {
             // Calculate effective score: deleted comments get -1000000
             const scoreA = a.deleted ? -1000000 : (a.score || 0);
             const scoreB = b.deleted ? -1000000 : (b.score || 0);
@@ -209,7 +222,7 @@ export default function Comments({ postType, postId }: CommentsProps) {
                     children: [],
                     author_name: created.author_name || session.user.name || session.user.email?.split('@')[0] || 'User',
                     avatar_url: session.user.image,
-                    avatar_color: (session.user as any).avatar_color,
+                    avatar_color: (session.user as { avatar_color?: string }).avatar_color,
                     score: 0,
                     up_count: 0,
                     down_count: 0,
