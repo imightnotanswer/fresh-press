@@ -25,3 +25,4 @@ $$;
 
 -- Grant execute permission
 GRANT EXECUTE ON FUNCTION public.set_comment_vote_with_user(UUID, TEXT, INTEGER) TO authenticated;
+

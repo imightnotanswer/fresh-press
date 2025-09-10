@@ -64,3 +64,4 @@ $$;
 -- Grant execute permission
 GRANT EXECUTE ON FUNCTION public.comments_for_post(TEXT, post_type, INTEGER) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.comments_for_post(TEXT, post_type, INTEGER) TO anon;
+

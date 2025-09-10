@@ -6,8 +6,29 @@ import { ALL_TAGS, ALL_REVIEWS, buildReviewsQuery } from "@/lib/groq";
 import ReviewCard from "@/components/ReviewCard";
 import FilterSortBar, { FilterSortOptions } from "@/components/FilterSortBar";
 
+// Type definitions
+interface Review {
+    _id: string;
+    title: string;
+    slug: { current: string };
+    artist: { name: string; slug: { current: string } };
+    coverUrl?: string;
+    publishedAt: string;
+    blurb?: string;
+    __seed?: { count: number; liked: boolean };
+}
+
+interface LikeData {
+    post_id: string;
+}
+
+interface CountData {
+    post_id: string;
+    like_count: number;
+}
+
 export default function ReviewsPage() {
-    const [reviews, setReviews] = useState<any[]>([]);
+    const [reviews, setReviews] = useState<Review[]>([]);
     const [tags, setTags] = useState<{ name: string; slug: string }[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterOptions, setFilterOptions] = useState<FilterSortOptions>({
@@ -32,8 +53,8 @@ export default function ReviewsPage() {
                     sanity.fetch(ALL_TAGS)
                 ]);
 
-                const ids = (reviewsData || []).map((r: any) => r._id);
-                let seedMap: Record<string, { count: number; liked: boolean }> = {};
+                const ids = (reviewsData || []).map((r: Review) => r._id);
+                const seedMap: Record<string, { count: number; liked: boolean }> = {};
                 try {
                     if (ids.length) {
                         const url = `/api/likes/batch?type=review&ids=${encodeURIComponent(ids.join(","))}`;
@@ -41,8 +62,8 @@ export default function ReviewsPage() {
                         if (res.ok) {
                             const { counts, liked } = await res.json();
                             const likeMap: Record<string, number> = {};
-                            const likedSet = new Set<string>((liked || []).map((r: any) => r.post_id));
-                            (counts || []).forEach((r: any) => {
+                            const likedSet = new Set<string>((liked || []).map((r: LikeData) => r.post_id));
+                            (counts || []).forEach((r: CountData) => {
                                 likeMap[r.post_id] = r.like_count ?? 0;
                             });
                             ids.forEach((id: string) => {
@@ -52,7 +73,7 @@ export default function ReviewsPage() {
                     }
                 } catch { }
 
-                const withSeeds = (reviewsData || []).map((r: any) => ({
+                const withSeeds = (reviewsData || []).map((r: Review) => ({
                     ...r,
                     __seed: seedMap[r._id] || { count: 0, liked: false }
                 }));
@@ -91,8 +112,8 @@ export default function ReviewsPage() {
                     sortBy: filterOptions.sortBy
                 }));
                 // Re-attach seeds for filtered result
-                const ids = (reviewsData || []).map((r: any) => r._id);
-                let seedMap: Record<string, { count: number; liked: boolean }> = {};
+                const ids = (reviewsData || []).map((r: Review) => r._id);
+                const seedMap: Record<string, { count: number; liked: boolean }> = {};
                 try {
                     if (ids.length) {
                         const url = `/api/likes/batch?type=review&ids=${encodeURIComponent(ids.join(","))}`;
@@ -100,13 +121,13 @@ export default function ReviewsPage() {
                         if (res.ok) {
                             const { counts, liked } = await res.json();
                             const likeMap: Record<string, number> = {};
-                            const likedSet = new Set<string>((liked || []).map((r: any) => r.post_id));
-                            (counts || []).forEach((r: any) => { likeMap[r.post_id] = r.like_count ?? 0; });
+                            const likedSet = new Set<string>((liked || []).map((r: LikeData) => r.post_id));
+                            (counts || []).forEach((r: CountData) => { likeMap[r.post_id] = r.like_count ?? 0; });
                             ids.forEach((id: string) => { seedMap[id] = { count: likeMap[id] ?? 0, liked: likedSet.has(id) }; });
                         }
                     }
                 } catch { }
-                const withSeeds = (reviewsData || []).map((r: any) => ({ ...r, __seed: seedMap[r._id] || { count: 0, liked: false } }));
+                const withSeeds = (reviewsData || []).map((r: Review) => ({ ...r, __seed: seedMap[r._id] || { count: 0, liked: false } }));
                 setReviews(withSeeds);
             } catch (error) {
                 console.error("Error fetching filtered reviews:", error);
@@ -169,7 +190,7 @@ export default function ReviewsPage() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 gap-4 place-items-center sm:gap-5 md:grid-cols-2 md:gap-6 lg:grid-cols-3 xl:grid-cols-4">
-                        {reviews.map((review: any) => (
+                        {reviews.map((review: Review) => (
                             <ReviewCard key={review._id} review={review} />
                         ))}
                     </div>

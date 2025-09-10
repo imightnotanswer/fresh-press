@@ -7,9 +7,41 @@ import ReviewCard from "@/components/ReviewCard";
 import MediaCard from "@/components/MediaCard";
 import Link from "next/link";
 
+// Type definitions
+interface Review {
+  _id: string;
+  title: string;
+  slug: { current: string };
+  artist: { name: string; slug: { current: string } };
+  coverUrl?: string;
+  publishedAt: string;
+  blurb?: string;
+  __seed?: { count: number; liked: boolean };
+}
+
+interface Media {
+  _id: string;
+  title: string;
+  slug: { current: string };
+  artist: { name: string; slug: { current: string } };
+  coverUrl?: string;
+  publishedAt: string;
+  videoUrl?: string;
+  __seed?: { count: number; liked: boolean };
+}
+
+interface LikeData {
+  post_id: string;
+}
+
+interface CountData {
+  post_id: string;
+  like_count: number;
+}
+
 export default function HomePage() {
-  const [reviews, setReviews] = useState<any[]>([]);
-  const [media, setMedia] = useState<any[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [media, setMedia] = useState<Media[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Load initial data
@@ -29,8 +61,8 @@ export default function HomePage() {
         ]);
 
         // Process reviews
-        const reviewIds = (reviewsData || []).map((r: any) => r._id);
-        let reviewSeedMap: Record<string, { count: number; liked: boolean }> = {};
+        const reviewIds = (reviewsData || []).map((r: Review) => r._id);
+        const reviewSeedMap: Record<string, { count: number; liked: boolean }> = {};
         try {
           if (reviewIds.length) {
             const url = `/api/likes/batch?type=review&ids=${encodeURIComponent(reviewIds.join(","))}`;
@@ -38,8 +70,8 @@ export default function HomePage() {
             if (res.ok) {
               const { counts, liked } = await res.json();
               const likeMap: Record<string, number> = {};
-              const likedSet = new Set<string>((liked || []).map((r: any) => r.post_id));
-              (counts || []).forEach((r: any) => {
+              const likedSet = new Set<string>((liked || []).map((r: LikeData) => r.post_id));
+              (counts || []).forEach((r: CountData) => {
                 likeMap[r.post_id] = r.like_count ?? 0;
               });
               reviewIds.forEach((id: string) => {
@@ -49,14 +81,14 @@ export default function HomePage() {
           }
         } catch { }
 
-        const reviewsWithSeeds = (reviewsData || []).map((r: any) => ({
+        const reviewsWithSeeds = (reviewsData || []).map((r: Review) => ({
           ...r,
           __seed: reviewSeedMap[r._id] || { count: 0, liked: false }
         }));
 
         // Process media
-        const mediaIds = (mediaData || []).map((m: any) => m._id);
-        let mediaSeedMap: Record<string, { count: number; liked: boolean }> = {};
+        const mediaIds = (mediaData || []).map((m: Media) => m._id);
+        const mediaSeedMap: Record<string, { count: number; liked: boolean }> = {};
         try {
           if (mediaIds.length) {
             const url = `/api/likes/batch?type=media&ids=${encodeURIComponent(mediaIds.join(","))}`;
@@ -64,8 +96,8 @@ export default function HomePage() {
             if (res.ok) {
               const { counts, liked } = await res.json();
               const likeMap: Record<string, number> = {};
-              const likedSet = new Set<string>((liked || []).map((r: any) => r.post_id));
-              (counts || []).forEach((r: any) => {
+              const likedSet = new Set<string>((liked || []).map((r: LikeData) => r.post_id));
+              (counts || []).forEach((r: CountData) => {
                 likeMap[r.post_id] = r.like_count ?? 0;
               });
               mediaIds.forEach((id: string) => {
@@ -75,7 +107,7 @@ export default function HomePage() {
           }
         } catch { }
 
-        const mediaWithSeeds = (mediaData || []).map((m: any) => ({
+        const mediaWithSeeds = (mediaData || []).map((m: Media) => ({
           ...m,
           __seed: mediaSeedMap[m._id] || { count: 0, liked: false }
         }));
@@ -135,7 +167,7 @@ export default function HomePage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-4 place-items-center sm:gap-5 md:grid-cols-2 md:gap-6 lg:grid-cols-3 xl:grid-cols-4">
-              {reviews.slice(0, 4).map((review: any) => (
+              {reviews.slice(0, 4).map((review: Review) => (
                 <ReviewCard key={review._id} review={review} />
               ))}
             </div>
@@ -172,7 +204,7 @@ export default function HomePage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-4 place-items-center sm:gap-5 md:grid-cols-2 md:gap-6 lg:grid-cols-3 xl:grid-cols-4">
-              {media.slice(0, 4).map((mediaItem: any) => (
+              {media.slice(0, 4).map((mediaItem: Media) => (
                 <MediaCard key={mediaItem._id} media={mediaItem} />
               ))}
             </div>

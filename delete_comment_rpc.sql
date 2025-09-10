@@ -47,3 +47,4 @@ END $$;
 
 -- Grant execute permission
 GRANT EXECUTE ON FUNCTION public.delete_comment_apply(UUID) TO anon, authenticated;
+

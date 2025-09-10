@@ -12,6 +12,51 @@ import MediaCard from "@/components/MediaCard";
 import ReviewCard from "@/components/ReviewCard";
 import Link from "next/link";
 
+// Type definitions
+interface LikeData {
+    post_id: string;
+}
+
+interface CountData {
+    post_id: string;
+    like_count: number;
+}
+
+interface Comment {
+    id: string;
+    body: string;
+    created_at: string;
+    post_type: string;
+    post_id: string;
+    target_title?: string;
+    up_count?: number;
+    down_count?: number;
+    score?: number;
+    link?: string;
+}
+
+interface Media {
+    _id: string;
+    title: string;
+    slug: { current: string };
+    artist: { name: string; slug: { current: string } };
+    coverUrl?: string;
+    publishedAt: string;
+    videoUrl?: string;
+    __seed?: { count: number; liked: boolean };
+}
+
+interface Review {
+    _id: string;
+    title: string;
+    slug: { current: string };
+    artist: { name: string; slug: { current: string } };
+    coverUrl?: string;
+    publishedAt: string;
+    blurb?: string;
+    __seed?: { count: number; liked: boolean };
+}
+
 interface UserProfile {
     id: string;
     username: string;
@@ -44,7 +89,7 @@ function ProfilePageInner() {
     const requestedUserId = searchParams.get("userId");
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [likedPosts, setLikedPosts] = useState<LikedPost[]>([]);
-    const [comments, setComments] = useState<any[]>([]);
+    const [comments, setComments] = useState<Comment[]>([]);
     const [loading, setLoading] = useState(true);
 
     const deleteComment = async (commentId: string) => {
@@ -101,8 +146,8 @@ function ProfilePageInner() {
                         if (!res || !res.ok) return {} as Record<string, { count: number; liked: boolean }>;
                         const { counts, liked } = await res.json();
                         const likeMap: Record<string, number> = {};
-                        const likedSet = new Set<string>((liked || []).map((r: any) => r.post_id));
-                        (counts || []).forEach((r: any) => { likeMap[r.post_id] = r.like_count ?? 0; });
+                        const likedSet = new Set<string>((liked || []).map((r: LikeData) => r.post_id));
+                        (counts || []).forEach((r: CountData) => { likeMap[r.post_id] = r.like_count ?? 0; });
                         const seedMap: Record<string, { count: number; liked: boolean }> = {};
                         items.forEach((l) => {
                             const id = l.post!._id;
@@ -120,7 +165,7 @@ function ProfilePageInner() {
                         const post = l.post ? { ...l.post } : null;
                         if (post) {
                             const seed = (l.post_type === 'review' ? reviewSeeds[post._id] : mediaSeeds[post._id]) || { count: 0, liked: false };
-                            (post as any).__seed = seed;
+                            (post as LikedPost['post'] & { __seed: { count: number; liked: boolean } }).__seed = seed;
                         }
                         return { ...l, post } as LikedPost;
                     });
@@ -198,8 +243,8 @@ function ProfilePageInner() {
                                         {profile.display_name || profile.username || ""}
                                     </h1>
                                     <span className={`inline-flex items-center rounded-full text-sm font-medium px-3 py-1 self-center sm:self-auto mx-auto sm:mx-0 w-auto max-w-max shrink-0 ${profile.is_public
-                                            ? "bg-green-100 text-green-800 border border-green-200"
-                                            : "bg-gray-100 text-gray-800 border border-gray-200"
+                                        ? "bg-green-100 text-green-800 border border-green-200"
+                                        : "bg-gray-100 text-gray-800 border border-gray-200"
                                         }`}>
                                         {profile.is_public ? "Public" : "Private"}
                                     </span>
@@ -268,7 +313,7 @@ function ProfilePageInner() {
                                             coverUrl: item.post.coverUrl || undefined,
                                             videoUrl: (item.post as any).videoUrl || undefined,
                                             __seed: (item.post as any).__seed || { count: 0, liked: true },
-                                        } as any;
+                                        } as Media;
                                         return <MediaCard key={key} media={media} />;
                                     }
                                     const review = {
@@ -280,7 +325,7 @@ function ProfilePageInner() {
                                         coverUrl: item.post.coverUrl || undefined,
                                         blurb: undefined,
                                         __seed: (item.post as any).__seed || { count: 0, liked: true },
-                                    } as any;
+                                    } as Review;
                                     return <ReviewCard key={key} review={review} />;
                                 })}
                             </div>
@@ -307,7 +352,7 @@ function ProfilePageInner() {
                         ) : (
                             <div className="space-y-3">
                                 {comments.map((c) => {
-                                    const href = (c as any).link || `/${c.post_type === 'review' ? 'reviews' : 'media'}/${c.post_id}#comment-${c.id}`;
+                                    const href = c.link || `/${c.post_type === 'review' ? 'reviews' : 'media'}/${c.post_id}#comment-${c.id}`;
                                     const isOwner = session?.user?.id === requestedUserId;
                                     return (
                                         <div key={c.id} className="group relative bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-all duration-200 hover:border-gray-300">
@@ -315,7 +360,7 @@ function ProfilePageInner() {
                                                 <div className="flex-1 min-w-0">
                                                     <Link href={href} className="block">
                                                         <h4 className="font-semibold text-gray-900 hover:text-blue-600 transition-colors duration-200 truncate">
-                                                            {(c as any).target_title || c.post_type}
+                                                            {c.target_title || c.post_type}
                                                         </h4>
                                                     </Link>
 
@@ -325,14 +370,14 @@ function ProfilePageInner() {
                                                         <div className="flex items-center gap-3">
                                                             <div className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full text-xs font-medium text-gray-600">
                                                                 <ArrowUp className="h-3 w-3 text-green-500" />
-                                                                <span>{(c as any).up_count || 0}</span>
+                                                                <span>{c.up_count || 0}</span>
                                                             </div>
                                                             <div className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full text-xs font-medium text-gray-600">
                                                                 <ArrowDown className="h-3 w-3 text-red-500" />
-                                                                <span>{(c as any).down_count || 0}</span>
+                                                                <span>{c.down_count || 0}</span>
                                                             </div>
                                                             <div className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
-                                                                {(c as any).score || 0}
+                                                                {c.score || 0}
                                                             </div>
                                                         </div>
 
