@@ -146,17 +146,26 @@
 
   body {
     @apply bg-background text-foreground;
+    min-height: 100vh;
+    overflow-x: hidden;
+    padding-top: 8rem;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    overflow-x: hidden;
   }
 }
 
 /* Cutting-edge navigation and content styles */
 @layer components {
   .cutting-edge-header {
-    @apply bg-black sticky top-0 z-50;
+    @apply bg-black fixed top-0 left-0 right-0 z-50;
     backdrop-filter: blur(10px);
     background: rgba(0, 0, 0, 0.95);
     transition: all 0.3s ease;
   }
+
 
   .cutting-edge-header.scrolled {
     @apply shadow-lg;
@@ -363,7 +372,17 @@
 
     /* Ensure content isn't hidden under fixed mobile header */
     body {
-      padding-top: 6.5rem;
+      padding-top: 5rem;
+      padding-bottom: 2rem;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Ensure main content areas can scroll properly */
+    main,
+    .min-h-screen {
+      min-height: calc(100vh - 5rem);
+      padding-bottom: 2rem;
     }
 
     .cutting-edge-header {

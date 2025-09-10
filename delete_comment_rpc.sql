@@ -1,6 +1,6 @@
 -- Atomic RPC for comment deletion with proper orphaning
--- Soft if has children; otherwise hard. Orphans *direct* children on soft.
--- Returns: {"mode":"soft"|"hard","movedChildren":[uuid,...]}
+-- Always soft delete. Orphans *direct* children on deletion.
+-- Returns: {"mode":"soft","movedChildren":[uuid,...]}
 
 CREATE OR REPLACE FUNCTION public.delete_comment_apply(p_comment_id UUID)
 RETURNS JSONB
@@ -18,31 +18,23 @@ BEGIN
   SELECT EXISTS (SELECT 1 FROM public.comments WHERE parent_id = p_comment_id)
     INTO has_kids;
 
+  -- Always soft delete the comment
+  UPDATE public.comments
+     SET deleted    = TRUE,
+         body       = '[deleted]',
+         updated_at = NOW()
+   WHERE id = p_comment_id;
+
   IF has_kids THEN
-    -- Collect child ids
+    -- Collect child ids (but don't orphan them - keep them as replies to deleted comment)
     SELECT COALESCE(ARRAY_AGG(id), '{}') INTO moved
     FROM public.comments
     WHERE parent_id = p_comment_id;
-
-    -- Soft delete the parent
-    UPDATE public.comments
-       SET deleted    = TRUE,
-           body       = '[deleted]',
-           updated_at = NOW()
-     WHERE id = p_comment_id;
-
-    -- Orphan direct children (do not touch grandchildren)
-    UPDATE public.comments
-       SET parent_id  = NULL,
-           updated_at = NOW()
-     WHERE parent_id = p_comment_id;
-
-    RETURN jsonb_build_object('mode','soft','movedChildren', moved);
   ELSE
-    -- Hard delete: completely remove
-    DELETE FROM public.comments WHERE id = p_comment_id;
-    RETURN jsonb_build_object('mode','hard','movedChildren', '[]'::jsonb);
+    moved := '{}';
   END IF;
+
+  RETURN jsonb_build_object('mode','soft','movedChildren', moved);
 END $$;
 
 -- Grant execute permission

@@ -53,9 +53,11 @@ export default function Comments({ postType, postId }: CommentsProps) {
 
     const fetchComments = async () => {
         try {
-            const response = await fetch(`/api/comments/list?postType=${postType}&postId=${postId}`);
+            // Add cache-busting parameter to ensure fresh data
+            const response = await fetch(`/api/comments/list?postType=${postType}&postId=${postId}&t=${Date.now()}`);
             if (response.ok) {
                 const data = await response.json();
+                console.log('Fetched comments data:', data);
                 setComments(data);
             }
         } catch (error) {
@@ -79,11 +81,19 @@ export default function Comments({ postType, postId }: CommentsProps) {
 
     const sortTree = (nodes: Comment[]) => {
         nodes.sort((a: Comment, b: Comment) => {
-            // Calculate effective score: deleted comments get -1000000
-            const scoreA = a.deleted ? -1000000 : (a.score || 0);
-            const scoreB = b.deleted ? -1000000 : (b.score || 0);
+            // First, separate deleted and non-deleted comments
+            if (a.deleted && !b.deleted) {
+                return 1; // a (deleted) goes after b (not deleted)
+            }
+            if (!a.deleted && b.deleted) {
+                return -1; // a (not deleted) goes before b (deleted)
+            }
 
-            // Sort by effective score (higher first)
+            // If both are deleted or both are not deleted, sort by score
+            const scoreA = a.score || 0;
+            const scoreB = b.score || 0;
+
+            // Sort by score (higher first)
             if (scoreB !== scoreA) {
                 return scoreB - scoreA;
             }
@@ -104,25 +114,6 @@ export default function Comments({ postType, postId }: CommentsProps) {
         setComments([...next]);
     };
 
-    // Utility functions for tree manipulation
-    const detachChildFromParent = (tree: Comment[], childId: string): Comment[] => {
-        return tree.map(n => {
-            if (n.children?.length) {
-                const kept = n.children.filter(c => c.id !== childId);
-                const changed = kept.length !== n.children.length;
-                return { ...n, children: detachChildFromParent(changed ? kept : n.children, childId) };
-            }
-            return n;
-        });
-    };
-
-    const findNode = (tree: Comment[], id: string): Comment | undefined => {
-        for (const n of tree) {
-            if (n.id === id) return n;
-            const f = n.children && findNode(n.children, id);
-            if (f) return f;
-        }
-    };
 
     const handleDelete = async (id: string) => {
         if (!session) return;
@@ -138,41 +129,17 @@ export default function Comments({ postType, postId }: CommentsProps) {
                 return;
             }
 
-            const { mode, movedChildren } = await response.json() as {
+            const responseData = await response.json() as {
+                id: string,
                 mode: 'soft' | 'hard',
                 movedChildren: string[]
             };
+            const { mode, movedChildren } = responseData;
 
             if (mode === 'soft') {
-                // 1) Mark parent as deleted in place
-                setComments(prev => {
-                    let next = prev;
-
-                    // Mark the node as deleted
-                    const mark = (nodes: Comment[]): Comment[] =>
-                        nodes.map(n => {
-                            if (n.id === id) return { ...n, deleted: true, body: '[deleted]' };
-                            return { ...n, children: n.children ? mark(n.children) : [] };
-                        });
-
-                    next = mark(next);
-
-                    // 2) Move each direct child to top-level
-                    for (const childId of movedChildren) {
-                        // a) find the child node in the tree
-                        const child = findNode(next, childId);
-                        if (!child) continue;
-
-                        // b) detach from its current parent
-                        next = detachChildFromParent(next, childId);
-
-                        // c) update its parent_id and push to top-level
-                        child.parent_id = null;
-                        next = [child, ...next];
-                    }
-
-                    return next;
-                });
+                // Mark comment as deleted in place (keep children as replies)
+                const next = updateTree(comments, id, (n) => ({ ...n, deleted: true, body: '[deleted]' }));
+                setComments([...next]);
             } else {
                 // hard delete: remove the node entirely (leaf)
                 setComments(prev => {
@@ -194,9 +161,46 @@ export default function Comments({ postType, postId }: CommentsProps) {
         e.preventDefault();
         if (!session || !newComment.trim()) return;
 
+        const commentText = newComment.trim();
+        setNewComment(""); // Clear input immediately
         setIsSubmitting(true);
+
+        // Get user's display name for optimistic comment
+        let displayName = session.user.name || session.user.email?.split('@')[0] || 'User';
         try {
-            // For now, we'll skip hCaptcha in development
+            const response = await fetch('/api/profile');
+            if (response.ok) {
+                const profile = await response.json();
+                displayName = profile.username || displayName;
+            }
+        } catch (error) {
+            console.log('Could not fetch profile for optimistic comment, using fallback');
+        }
+
+        // Create optimistic comment that appears instantly
+        const tempId = `temp-${Date.now()}`;
+        const optimisticComment = {
+            id: tempId,
+            body: commentText,
+            created_at: new Date().toISOString(),
+            user_id: session.user.id,
+            children: [],
+            author_name: displayName,
+            avatar_url: session.user.image,
+            avatar_color: (session.user as { avatar_color?: string }).avatar_color,
+            score: 0,
+            up_count: 0,
+            down_count: 0,
+            my_vote: 0,
+            deleted: false,
+            isOptimistic: true // Flag to identify optimistic comments
+        };
+
+        // Add optimistic comment immediately
+        setComments((prev) => [optimisticComment, ...prev]);
+
+        try {
+            // Make API call
             const response = await fetch("/api/comments", {
                 method: "POST",
                 headers: {
@@ -205,36 +209,43 @@ export default function Comments({ postType, postId }: CommentsProps) {
                 body: JSON.stringify({
                     postType,
                     postId,
-                    body: newComment,
+                    body: commentText,
                     hcaptchaToken: "dev-token", // Replace with actual hCaptcha token
                 }),
             });
 
             if (response.ok) {
                 const created = await response.json();
-                setNewComment("");
-                // Optimistic append at top-level with proper user data
-                const optimisticComment = {
-                    id: created.id,
-                    body: created.body,
-                    created_at: created.created_at,
-                    user_id: created.user_id,
-                    children: [],
-                    author_name: created.author_name || session.user.name || session.user.email?.split('@')[0] || 'User',
-                    avatar_url: session.user.image,
-                    avatar_color: (session.user as { avatar_color?: string }).avatar_color,
-                    score: 0,
-                    up_count: 0,
-                    down_count: 0,
-                    my_vote: 0,
-                    deleted: false
-                };
-                setComments((prev) => [optimisticComment, ...prev]);
+
+                // Replace optimistic comment with real data
+                setComments((prev) =>
+                    prev.map(comment =>
+                        comment.id === tempId
+                            ? {
+                                ...created,
+                                children: [],
+                                author_name: created.author_name || session.user.name || session.user.email?.split('@')[0] || 'User',
+                                avatar_url: session.user.image,
+                                avatar_color: (session.user as { avatar_color?: string }).avatar_color,
+                                score: 0,
+                                up_count: 0,
+                                down_count: 0,
+                                my_vote: 0,
+                                deleted: false
+                            }
+                            : comment
+                    )
+                );
+
                 toast({
                     title: "Comment posted",
                     description: "Your comment has been posted successfully.",
                 });
             } else {
+                // Remove optimistic comment on error
+                setComments((prev) => prev.filter(comment => comment.id !== tempId));
+                setNewComment(commentText); // Restore the comment text
+
                 const error = await response.json();
                 toast({
                     title: "Error",
@@ -244,6 +255,10 @@ export default function Comments({ postType, postId }: CommentsProps) {
             }
         } catch (error) {
             console.error("Error posting comment:", error);
+            // Remove optimistic comment on error
+            setComments((prev) => prev.filter(comment => comment.id !== tempId));
+            setNewComment(commentText); // Restore the comment text
+
             toast({
                 title: "Error",
                 description: "Failed to post comment",
@@ -256,6 +271,53 @@ export default function Comments({ postType, postId }: CommentsProps) {
 
     const handleReply = async (parentId: string, body: string) => {
         if (!session) return;
+
+        // Get user's display name for optimistic reply
+        let displayName = session.user.name || session.user.email?.split('@')[0] || 'User';
+        try {
+            const response = await fetch('/api/profile');
+            if (response.ok) {
+                const profile = await response.json();
+                displayName = profile.username || displayName;
+            }
+        } catch (error) {
+            console.log('Could not fetch profile for optimistic reply, using fallback');
+        }
+
+        // Create optimistic reply that appears instantly
+        const tempId = `temp-reply-${Date.now()}`;
+        const optimisticReply = {
+            id: tempId,
+            body: body,
+            created_at: new Date().toISOString(),
+            user_id: session.user.id,
+            parent_id: parentId,
+            children: [],
+            author_name: displayName,
+            avatar_url: session.user.image,
+            avatar_color: (session.user as { avatar_color?: string }).avatar_color,
+            score: 0,
+            up_count: 0,
+            down_count: 0,
+            my_vote: 0,
+            deleted: false,
+            isOptimistic: true
+        };
+
+        // Add optimistic reply to the parent comment
+        setComments((prev) => {
+            const addReplyToParent = (comments: Comment[]): Comment[] =>
+                comments.map(comment => {
+                    if (comment.id === parentId) {
+                        return { ...comment, children: [...comment.children, optimisticReply] };
+                    }
+                    if (comment.children.length > 0) {
+                        return { ...comment, children: addReplyToParent(comment.children) };
+                    }
+                    return comment;
+                });
+            return addReplyToParent(prev);
+        });
 
         try {
             const response = await fetch("/api/comments", {
@@ -274,13 +336,63 @@ export default function Comments({ postType, postId }: CommentsProps) {
 
             if (response.ok) {
                 const created = await response.json();
-                // Re-fetch to merge into proper tree or optimistically place under parent
-                await fetchComments();
+
+                // Replace optimistic reply with real data
+                setComments((prev) => {
+                    const updateReply = (comments: Comment[]): Comment[] =>
+                        comments.map(comment => {
+                            if (comment.id === parentId) {
+                                return {
+                                    ...comment,
+                                    children: comment.children.map(child =>
+                                        child.id === tempId
+                                            ? {
+                                                ...created,
+                                                children: [],
+                                                author_name: created.author_name || session.user.name || session.user.email?.split('@')[0] || 'User',
+                                                avatar_url: session.user.image,
+                                                avatar_color: (session.user as { avatar_color?: string }).avatar_color,
+                                                score: 0,
+                                                up_count: 0,
+                                                down_count: 0,
+                                                my_vote: 0,
+                                                deleted: false
+                                            }
+                                            : child
+                                    )
+                                };
+                            }
+                            if (comment.children.length > 0) {
+                                return { ...comment, children: updateReply(comment.children) };
+                            }
+                            return comment;
+                        });
+                    return updateReply(prev);
+                });
+
                 toast({
                     title: "Reply posted",
                     description: "Your reply has been posted successfully.",
                 });
             } else {
+                // Remove optimistic reply on error
+                setComments((prev) => {
+                    const removeReply = (comments: Comment[]): Comment[] =>
+                        comments.map(comment => {
+                            if (comment.id === parentId) {
+                                return {
+                                    ...comment,
+                                    children: comment.children.filter(child => child.id !== tempId)
+                                };
+                            }
+                            if (comment.children.length > 0) {
+                                return { ...comment, children: removeReply(comment.children) };
+                            }
+                            return comment;
+                        });
+                    return removeReply(prev);
+                });
+
                 const error = await response.json();
                 toast({
                     title: "Error",
@@ -290,6 +402,24 @@ export default function Comments({ postType, postId }: CommentsProps) {
             }
         } catch (error) {
             console.error("Error posting reply:", error);
+            // Remove optimistic reply on error
+            setComments((prev) => {
+                const removeReply = (comments: Comment[]): Comment[] =>
+                    comments.map(comment => {
+                        if (comment.id === parentId) {
+                            return {
+                                ...comment,
+                                children: comment.children.filter(child => child.id !== tempId)
+                            };
+                        }
+                        if (comment.children.length > 0) {
+                            return { ...comment, children: removeReply(comment.children) };
+                        }
+                        return comment;
+                    });
+                return removeReply(prev);
+            });
+
             toast({
                 title: "Error",
                 description: "Failed to post reply",
@@ -319,27 +449,34 @@ export default function Comments({ postType, postId }: CommentsProps) {
     }
 
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Comments ({comments.length})</CardTitle>
+        <Card className="border-orange-200">
+            <CardHeader className="bg-gradient-to-r from-orange-50 to-white border-b border-orange-200">
+                <CardTitle className="text-orange-900">Comments ({comments.length})</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-6 p-6">
                 {session ? (
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <Textarea
                             placeholder="Write a comment..."
                             value={newComment}
                             onChange={(e) => setNewComment(e.target.value)}
-                            className="min-h-[100px]"
+                            className="min-h-[100px] border-orange-200 focus:border-orange-400 focus:ring-orange-200"
                         />
-                        <Button type="submit" disabled={isSubmitting || !newComment.trim()}>
+                        <Button
+                            type="submit"
+                            disabled={isSubmitting || !newComment.trim()}
+                            className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg"
+                        >
                             {isSubmitting ? "Posting..." : "Post Comment"}
                         </Button>
                     </form>
                 ) : (
                     <div className="text-center py-8">
                         <p className="text-gray-600 mb-4">Sign in to post comments</p>
-                        <Button onClick={() => window.location.href = "/api/auth/signin"}>
+                        <Button
+                            onClick={() => window.location.href = "/api/auth/signin"}
+                            className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg"
+                        >
                             Sign In
                         </Button>
                     </div>

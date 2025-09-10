@@ -218,7 +218,7 @@ function ProfilePageInner() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 py-8">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 py-8 pb-16">
             <div className="w-full max-w-5xl mx-auto px-4">
                 {/* Profile Header */}
                 <Card className="mb-8 overflow-hidden border-0 shadow-xl bg-gradient-to-r from-white to-gray-50">

@@ -129,106 +129,82 @@ export default function CommentNode({
     const shouldShowReply = depth < maxDepth;
 
     return (
-        <div className={`${depth > 0 ? "ml-4 border-l-2 border-gray-200 pl-4" : ""}`}>
-            <div className="group relative bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-all duration-200 hover:border-gray-300 mb-3" id={`comment-${comment.id}`}>
-                <div className="space-y-3">
+        <div className={`${depth > 0 ? "ml-6 border-l-2 border-orange-400 pl-4" : ""}`}>
+            <div className="group relative bg-gradient-to-br from-white to-orange-50 border border-orange-200 rounded-2xl p-5 hover:shadow-2xl hover:border-orange-400 transition-all duration-300 mb-4" id={`comment-${comment.id}`}>
+                <div className="space-y-4">
+                    {/* Header with user info and voting */}
                     <div className="flex items-start justify-between">
-                        <div className="flex items-center space-x-3">
-                            {!comment.deleted && (
-                                <div className="flex items-center gap-1 mr-2">
-                                    <Button variant={userVote === 1 ? "default" : "ghost"} size="sm" disabled={busy} onClick={() => vote(1)} className="h-8 w-8 p-0">
-                                        <ArrowUp className="h-4 w-4" />
-                                    </Button>
-                                    <span className="text-sm font-medium min-w-[20px] text-center">{score}</span>
-                                    <Button variant={userVote === -1 ? "default" : "ghost"} size="sm" disabled={busy} onClick={() => vote(-1)} className="h-8 w-8 p-0">
-                                        <ArrowDown className="h-4 w-4" />
-                                    </Button>
+                        <div className="flex items-center space-x-3 flex-1">
+                            {comment.deleted ? (
+                                <div className="text-sm font-medium text-gray-500 inline-flex items-center gap-2">
+                                    <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center">
+                                        <span className="text-xs">?</span>
+                                    </div>
+                                    <span className="italic">deleted</span>
                                 </div>
-                            )}
-                            <Link href={`/profile?userId=${comment.user_id}`} className="text-sm font-medium text-gray-900 inline-flex items-center gap-2 hover:text-blue-600 transition-colors duration-200">
-                                {comment.avatar_url ? (
-                                    <img src={comment.avatar_url} alt="avatar" className="h-6 w-6 rounded-full ring-2 ring-white shadow-sm" />
-                                ) : (
-                                    <div className="h-6 w-6 rounded-full ring-2 ring-white shadow-sm" style={{ backgroundColor: comment.avatar_color || '#e5e7eb' }} />
-                                )}
-                                {comment.deleted ? (
-                                    <span className="italic text-gray-500">deleted</span>
-                                ) : (
-                                    comment.display_name || comment.username || `User ${comment.user_id.slice(0, 8)}`
-                                )}
-                            </Link>
-                            <span className="text-xs text-gray-500 font-mono">
-                                {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
-                                {comment.updated_at && new Date(comment.updated_at).getTime() > new Date(comment.created_at).getTime() && (
-                                    <span className="ml-1">(edited)</span>
-                                )}
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                            {isOwner && !comment.deleted && (
-                                <>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => {
-                                            if (!isEditing) setEditText(stripHtml(comment.body));
-                                            setIsEditing((v) => !v);
-                                        }}
-                                        className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-gray-500 hover:text-gray-700 hover:bg-gray-100 p-1 h-6 w-6"
-                                    >
-                                        <Edit2 className="h-3 w-3" />
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={async () => {
-                                            try {
-                                                // Optimistic deletion - remove immediately from UI
-                                                onDelete?.(comment.id);
-
-                                                const response = await fetch(`/api/comments?id=${comment.id}`, { method: 'DELETE' });
-                                                if (!response.ok) {
-                                                    console.error('Failed to delete comment');
-                                                    // If deletion failed, reload to restore the comment
-                                                    onReload?.();
-                                                }
-                                            } catch (error) {
-                                                console.error('Error deleting comment:', error);
-                                                // If deletion failed, reload to restore the comment
-                                                onReload?.();
-                                            }
-                                        }}
-                                        className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-red-500 hover:text-red-700 hover:bg-red-50 p-1 h-6 w-6"
-                                    >
-                                        <Trash2 className="h-3 w-3" />
-                                    </Button>
-                                </>
-                            )}
-                            {comment.children.length > 0 && (
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setIsExpanded(!isExpanded)}
-                                    className="text-gray-500 hover:text-gray-700 hover:bg-gray-100 p-1 h-6 w-6"
-                                >
-                                    {isExpanded ? (
-                                        <ChevronDown className="h-3 w-3" />
+                            ) : (
+                                <Link href={`/profile?userId=${comment.user_id}`} className="text-sm font-medium text-gray-900 inline-flex items-center gap-3 hover:text-orange-600 transition-colors duration-200">
+                                    {comment.avatar_url ? (
+                                        <img src={comment.avatar_url} alt="avatar" className="h-8 w-8 rounded-full ring-2 ring-orange-300 shadow-lg" />
                                     ) : (
-                                        <ChevronRight className="h-3 w-3" />
+                                        <div className="h-8 w-8 rounded-full ring-2 ring-orange-300 shadow-lg flex items-center justify-center text-white font-semibold text-sm bg-gradient-to-br from-orange-400 to-pink-500">
+                                            {(comment.author_name || comment.display_name || comment.username || 'U').charAt(0).toUpperCase()}
+                                        </div>
                                     )}
-                                </Button>
+                                    <div className="flex flex-col">
+                                        <span className="font-semibold text-gray-900">{comment.author_name || comment.display_name || comment.username || `User ${comment.user_id.slice(0, 8)}`}</span>
+                                        <span className="text-xs text-gray-500">
+                                            {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                                            {comment.updated_at && new Date(comment.updated_at).getTime() > new Date(comment.created_at).getTime() && (
+                                                <span className="ml-1">(edited)</span>
+                                            )}
+                                        </span>
+                                    </div>
+                                </Link>
                             )}
                         </div>
+
+                        {/* Voting controls - right side */}
+                        {!comment.deleted && (
+                            <div className="flex flex-col items-center gap-1">
+                                <Button
+                                    variant={userVote === 1 ? "default" : "ghost"}
+                                    size="sm"
+                                    disabled={busy}
+                                    onClick={() => vote(1)}
+                                    className={`h-7 w-7 p-0 rounded-full transition-all duration-200 ${userVote === 1
+                                            ? 'bg-green-500 text-white hover:bg-green-600 shadow-lg'
+                                            : 'text-gray-400 hover:text-green-500 hover:bg-green-100'
+                                        }`}
+                                >
+                                    <ArrowUp className="h-3 w-3" />
+                                </Button>
+                                <span className="text-xs font-semibold text-gray-700 min-w-[16px] text-center">{score}</span>
+                                <Button
+                                    variant={userVote === -1 ? "default" : "ghost"}
+                                    size="sm"
+                                    disabled={busy}
+                                    onClick={() => vote(-1)}
+                                    className={`h-7 w-7 p-0 rounded-full transition-all duration-200 ${userVote === -1
+                                            ? 'bg-red-500 text-white hover:bg-red-600 shadow-lg'
+                                            : 'text-gray-400 hover:text-red-500 hover:bg-red-100'
+                                        }`}
+                                >
+                                    <ArrowDown className="h-3 w-3" />
+                                </Button>
+                            </div>
+                        )}
                     </div>
 
+                    {/* Comment body */}
                     {isEditing ? (
-                        <div className="space-y-3 mt-3">
+                        <div className="space-y-4">
                             <Textarea
                                 value={editText}
                                 onChange={(e) => setEditText(e.target.value)}
-                                className="min-h-[100px] resize-none"
+                                className="min-h-[100px] resize-none border-orange-200 focus:border-orange-400 focus:ring-orange-200"
                             />
-                            <div className="flex gap-2">
+                            <div className="flex gap-3">
                                 <Button
                                     size="sm"
                                     onClick={async () => {
@@ -241,7 +217,7 @@ export default function CommentNode({
                                         onEdited?.(comment.id, editText, new Date().toISOString());
                                         onReload?.();
                                     }}
-                                    className="bg-blue-600 hover:bg-blue-700"
+                                    className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg"
                                 >
                                     Save
                                 </Button>
@@ -252,47 +228,106 @@ export default function CommentNode({
                                         setIsEditing(false);
                                         setEditText(stripHtml(comment.body));
                                     }}
+                                    className="border-orange-200 text-orange-600 hover:bg-orange-50 px-4 py-2 rounded-lg"
                                 >
                                     Cancel
                                 </Button>
                             </div>
                         </div>
                     ) : (
-                        <div className="mt-3">
-                            <div
-                                className={`prose prose-sm max-w-none text-gray-700 leading-relaxed ${comment.deleted ? 'italic text-gray-500' : ''}`}
-                                dangerouslySetInnerHTML={{ __html: comment.body }}
-                            />
+                        <div className="text-gray-800 leading-relaxed">
+                            {comment.deleted ? (
+                                <div className="italic text-gray-500 text-sm">
+                                    [deleted]
+                                </div>
+                            ) : (
+                                <div
+                                    className="prose prose-sm max-w-none break-words text-gray-800"
+                                    dangerouslySetInnerHTML={{ __html: comment.body }}
+                                />
+                            )}
                         </div>
                     )}
 
-                    {shouldShowReply && !comment.deleted && (
-                        <div className="mt-3">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setIsReplying(!isReplying)}
-                                className="text-xs text-gray-600 hover:text-gray-800 hover:bg-gray-100 px-3 py-1 rounded-full"
-                            >
-                                <Reply className="h-3 w-3 mr-1" />
-                                Reply
-                            </Button>
+                    {/* Action buttons at the bottom */}
+                    <div className="flex items-center justify-between pt-2 border-t border-orange-100">
+                        <div className="flex items-center gap-2">
+                            {shouldShowReply && !comment.deleted && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setIsReplying(!isReplying)}
+                                    className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 px-3 py-2 rounded-lg text-sm font-medium"
+                                >
+                                    <Reply className="h-4 w-4 mr-2" />
+                                    Reply
+                                </Button>
+                            )}
+                            {comment.children.length > 0 && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setIsExpanded(!isExpanded)}
+                                    className="text-gray-500 hover:text-gray-700 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm"
+                                >
+                                    {isExpanded ? (
+                                        <>
+                                            <ChevronDown className="h-4 w-4 mr-2" />
+                                            Hide replies
+                                        </>
+                                    ) : (
+                                        <>
+                                            <ChevronRight className="h-4 w-4 mr-2" />
+                                            Show replies ({comment.children.length})
+                                        </>
+                                    )}
+                                </Button>
+                            )}
                         </div>
-                    )}
+
+                        {/* Edit/Delete buttons for owner */}
+                        {isOwner && !comment.deleted && (
+                            <div className="flex items-center gap-1">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                        if (!isEditing) setEditText(stripHtml(comment.body));
+                                        setIsEditing((v) => !v);
+                                    }}
+                                    className="text-gray-500 hover:text-orange-600 hover:bg-orange-50 p-2 rounded-lg"
+                                    title="Edit comment"
+                                >
+                                    <Edit2 className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                        onDelete?.(comment.id);
+                                    }}
+                                    className="text-gray-500 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg"
+                                    title="Delete comment"
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        )}
+                    </div>
 
                     {isReplying && (
-                        <div className="space-y-3 mt-3 p-3 bg-gray-50 rounded-lg border">
+                        <div className="space-y-4 mt-4 p-4 bg-orange-50 rounded-xl border border-orange-200">
                             <Textarea
                                 placeholder="Write a reply..."
                                 value={replyText}
                                 onChange={(e) => setReplyText(e.target.value)}
-                                className="min-h-[80px] resize-none"
+                                className="min-h-[80px] resize-none border-orange-200 focus:border-orange-400 focus:ring-orange-200"
                             />
-                            <div className="flex gap-2">
+                            <div className="flex gap-3">
                                 <Button
                                     size="sm"
                                     onClick={handleReply}
-                                    className="bg-blue-600 hover:bg-blue-700"
+                                    className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg"
                                 >
                                     Reply
                                 </Button>
@@ -303,6 +338,7 @@ export default function CommentNode({
                                         setIsReplying(false);
                                         setReplyText("");
                                     }}
+                                    className="border-orange-200 text-orange-600 hover:bg-orange-50 px-4 py-2 rounded-lg"
                                 >
                                     Cancel
                                 </Button>
@@ -322,6 +358,10 @@ export default function CommentNode({
                             postId={postId}
                             depth={depth + 1}
                             onReply={onReply}
+                            onReload={onReload}
+                            onVote={onVote}
+                            onEdited={onEdited}
+                            onDelete={onDelete}
                         />
                     ))}
                 </div>

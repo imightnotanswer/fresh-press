@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -12,6 +12,7 @@ export default function Navigation() {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
     const [isClient, setIsClient] = useState(false);
+    const isScrolledRef = useRef(false);
     const pathname = usePathname();
 
     // Ensure we're on the client side
@@ -36,7 +37,11 @@ export default function Navigation() {
         let ticking = false;
         const update = () => {
             const y = window.scrollY;
-            setIsScrolled(prev => (prev ? y > HIDE_AT : y > SHOW_AT));
+            const newScrolled = (isScrolledRef.current ? y > HIDE_AT : y > SHOW_AT);
+            if (isScrolledRef.current !== newScrolled) {
+                isScrolledRef.current = newScrolled;
+                setIsScrolled(newScrolled);
+            }
             ticking = false;
         };
 
@@ -223,3 +228,5 @@ export default function Navigation() {
 // Spacer for fixed mobile header to avoid content jump
 // Rendered only on client via Navigation parent usage
 // (Removed MobileHeaderSpacer to avoid extra layout/compile issues)
+
+

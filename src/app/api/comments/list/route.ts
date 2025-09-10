@@ -31,6 +31,7 @@ interface ProfileRow {
     id: string;
     avatar_url: string | null;
     avatar_color: string | null;
+    username: string | null;
 }
 
 interface CommentWithSeed {
@@ -77,7 +78,7 @@ export async function GET(request: NextRequest) {
             });
             if ((rpc as { error?: Error }).error) throw (rpc as { error: Error }).error;
             data = (rpc as { data: CommentWithSeed[] }).data || [];
-        } catch {
+        } catch (error) {
             // RPC unavailable, using manual list build (which works correctly)
 
             // --- Fallback: fetch comments, scores, my votes, and build tree ---
@@ -129,14 +130,20 @@ export async function GET(request: NextRequest) {
             }));
         }
 
-        // Fetch avatars/colors for authors
+        // Fetch avatars/colors and usernames for authors
         const userIds = (data || []).map((c: CommentWithSeed) => c.user_id);
         const { data: profiles } = await supabase
             .from('user_profiles')
-            .select('id, avatar_url, avatar_color')
+            .select('id, avatar_url, avatar_color, username')
             .in('id', userIds.length ? userIds : ['-']);
-        const avatarById: Record<string, { url: string | null, color: string | null }> = {};
-        (profiles || []).forEach((p: ProfileRow) => { avatarById[p.id] = { url: p.avatar_url || null, color: p.avatar_color || null }; });
+        const avatarById: Record<string, { url: string | null, color: string | null, username: string | null }> = {};
+        (profiles || []).forEach((p: ProfileRow) => {
+            avatarById[p.id] = {
+                url: p.avatar_url || null,
+                color: p.avatar_color || null,
+                username: p.username || null
+            };
+        });
 
         // Build nested tree structure
         const commentMap = new Map<string, CommentWithSeed>();
@@ -144,25 +151,30 @@ export async function GET(request: NextRequest) {
 
         // First pass: create map of all comments
         data?.forEach((comment: CommentWithSeed) => {
-            const av = avatarById[comment.user_id] || { url: null, color: null };
-            commentMap.set(comment.id, { ...comment, avatar_url: av.url, avatar_color: av.color, children: [] });
+            const av = avatarById[comment.user_id] || { url: null, color: null, username: null };
+            commentMap.set(comment.id, {
+                ...comment,
+                avatar_url: av.url,
+                avatar_color: av.color,
+                // Always use current username from profile, never stored author_name
+                author_name: av.username || `User ${comment.user_id.slice(0, 8)}`,
+                children: []
+            });
         });
 
         // Second pass: build tree structure
         data?.forEach((comment: CommentWithSeed) => {
             if (comment.parent_id) {
-                // Only add child comments if they're not deleted
-                if (!comment.deleted) {
-                    const parent = commentMap.get(comment.parent_id);
-                    if (parent) {
-                        const child = commentMap.get(comment.id);
-                        if (child) {
-                            parent.children.push(child);
-                        }
+                // Add all child comments (deleted and non-deleted)
+                const parent = commentMap.get(comment.parent_id);
+                if (parent) {
+                    const child = commentMap.get(comment.id);
+                    if (child) {
+                        parent.children.push(child);
                     }
                 }
             } else {
-                // Always add root comments (parent comments), even if deleted
+                // Add all root comments (deleted and non-deleted)
                 const rootComment = commentMap.get(comment.id);
                 if (rootComment) {
                     rootComments.push(rootComment);
@@ -170,14 +182,22 @@ export async function GET(request: NextRequest) {
             }
         });
 
-        // Sort by effective score (deleted = -1000000), then created_at asc at each level
+        // Sort with deleted comments at bottom of each thread level
         function sortTree(nodes: CommentWithSeed[]) {
             nodes.sort((a, b) => {
-                // Calculate effective score: deleted comments get -1000000
-                const scoreA = a.deleted ? -1000000 : (a.score || 0);
-                const scoreB = b.deleted ? -1000000 : (b.score || 0);
+                // First, separate deleted and non-deleted comments
+                if (a.deleted && !b.deleted) {
+                    return 1; // a (deleted) goes after b (not deleted)
+                }
+                if (!a.deleted && b.deleted) {
+                    return -1; // a (not deleted) goes before b (deleted)
+                }
 
-                // Sort by effective score (higher first)
+                // If both are deleted or both are not deleted, sort by score
+                const scoreA = a.score || 0;
+                const scoreB = b.score || 0;
+
+                // Sort by score (higher first)
                 if (scoreB !== scoreA) {
                     return scoreB - scoreA;
                 }
