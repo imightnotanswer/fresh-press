@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
             }
         }
 
-        // Get user's liked posts with minimal post info for linking
+        // Get user's liked posts with minimal post info for linking and counts
         let likes: any[] | null = null;
         let likesError: any = null;
         if (supabase) {
@@ -96,9 +96,22 @@ export async function GET(request: NextRequest) {
             const byId: Record<string, any> = {};
             [...reviewDocs, ...mediaDocs].forEach((d: any) => { byId[d._id] = d; });
 
+            // fetch counts for all liked posts in one go
+            let countsByKey: Record<string, number> = {};
+            if (supabase && likedItems.length) {
+                const { data: likeRows } = await supabase
+                    .from('likes')
+                    .select('post_id, post_type');
+                (likeRows || []).forEach((r: any) => {
+                    const k = `${r.post_type}:${r.post_id}`;
+                    countsByKey[k] = (countsByKey[k] || 0) + 1;
+                });
+            }
+
             likedItems = likedItems.map(l => ({
                 ...l,
                 post: byId[l.post_id] || null,
+                like_count: countsByKey[`${l.post_type}:${l.post_id}`] || 0,
             }));
         }
 

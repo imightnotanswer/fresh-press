@@ -32,7 +32,32 @@ export default function ReviewsPage() {
                     sanity.fetch(ALL_TAGS)
                 ]);
 
-                setReviews(reviewsData || []);
+                const ids = (reviewsData || []).map((r: any) => r._id);
+                let seedMap: Record<string, { count: number; liked: boolean }> = {};
+                try {
+                    if (ids.length) {
+                        const url = `/api/likes/batch?type=review&ids=${encodeURIComponent(ids.join(","))}`;
+                        const res = await fetch(url, { cache: "no-store" });
+                        if (res.ok) {
+                            const { counts, liked } = await res.json();
+                            const likeMap: Record<string, number> = {};
+                            const likedSet = new Set<string>((liked || []).map((r: any) => r.post_id));
+                            (counts || []).forEach((r: any) => {
+                                likeMap[r.post_id] = r.like_count ?? 0;
+                            });
+                            ids.forEach((id: string) => {
+                                seedMap[id] = { count: likeMap[id] ?? 0, liked: likedSet.has(id) };
+                            });
+                        }
+                    }
+                } catch { }
+
+                const withSeeds = (reviewsData || []).map((r: any) => ({
+                    ...r,
+                    __seed: seedMap[r._id] || { count: 0, liked: false }
+                }));
+
+                setReviews(withSeeds);
                 setTags(tagsData || []);
                 setFilterOptions(prev => ({
                     ...prev,
@@ -65,7 +90,24 @@ export default function ReviewsPage() {
                     tagIds: filterOptions.selectedTags,
                     sortBy: filterOptions.sortBy
                 }));
-                setReviews(reviewsData || []);
+                // Re-attach seeds for filtered result
+                const ids = (reviewsData || []).map((r: any) => r._id);
+                let seedMap: Record<string, { count: number; liked: boolean }> = {};
+                try {
+                    if (ids.length) {
+                        const url = `/api/likes/batch?type=review&ids=${encodeURIComponent(ids.join(","))}`;
+                        const res = await fetch(url, { cache: "no-store" });
+                        if (res.ok) {
+                            const { counts, liked } = await res.json();
+                            const likeMap: Record<string, number> = {};
+                            const likedSet = new Set<string>((liked || []).map((r: any) => r.post_id));
+                            (counts || []).forEach((r: any) => { likeMap[r.post_id] = r.like_count ?? 0; });
+                            ids.forEach((id: string) => { seedMap[id] = { count: likeMap[id] ?? 0, liked: likedSet.has(id) }; });
+                        }
+                    }
+                } catch { }
+                const withSeeds = (reviewsData || []).map((r: any) => ({ ...r, __seed: seedMap[r._id] || { count: 0, liked: false } }));
+                setReviews(withSeeds);
             } catch (error) {
                 console.error("Error fetching filtered reviews:", error);
             } finally {

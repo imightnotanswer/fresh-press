@@ -9,6 +9,7 @@ import AuthButton from "@/components/AuthButton";
 import ReviewContent from "@/components/ReviewContent";
 import ClickableImage from "@/components/ClickableImage";
 import LikeButton from "@/components/LikeButton";
+import { cookies } from "next/headers";
 
 
 interface ReviewPageProps {
@@ -54,6 +55,17 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
     }
 
 
+    // Seed like count/liked state for first paint on detail page
+    let seed = { count: 0, liked: false } as { count: number; liked: boolean };
+    try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/likes/batch?type=review&ids=${encodeURIComponent(review._id)}`, { cache: "no-store", headers: { cookie: cookies().toString() } });
+        if (res.ok) {
+            const { counts, liked } = await res.json();
+            seed.count = counts?.[0]?.like_count ?? 0;
+            seed.liked = Array.isArray(liked) ? liked.some((r: any) => r.post_id === review._id) : false;
+        }
+    } catch { }
+
     const relatedReviews = await getRelatedReviews(review.artist._id);
 
     return (
@@ -80,7 +92,7 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
                             <div>
                                 <div className="flex items-start justify-between gap-4">
                                     <h1 className="text-4xl font-bold text-gray-900 mb-2">{review.title}</h1>
-                                    <LikeButton postId={review._id} postType="review" showCount={true} />
+                                    <LikeButton postId={review._id} postType="review" showCount={true} initialCount={seed.count} initialLiked={seed.liked} />
                                 </div>
                                 <p className="text-xl text-gray-600 mb-4">
                                     by{" "}

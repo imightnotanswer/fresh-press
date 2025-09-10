@@ -19,35 +19,37 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Missing postId or postType" }, { status: 400 });
         }
 
-        // Prevent duplicate likes by same user
-        const { data: existingLike } = await supabase
-            .from("likes")
-            .select("id")
-            .eq("user_id", session.user.id)
-            .eq("post_id", postId)
-            .eq("post_type", postType)
-            .single();
-
-        if (existingLike) {
-            return NextResponse.json({ error: "Already liked" }, { status: 400 });
+        // Try insert; if a unique constraint exists or we raced another insert,
+        // handle the duplicate gracefully instead of surfacing a 500.
+        // Prefer RPC (ensures counter maintenance); fallback to direct insert
+        const rpc = await supabase.rpc("upsert_like", {
+            p_post_id: postId,
+            p_post_type: postType,
+            p_user_id: session.user.id,
+        });
+        if ((rpc as any)?.error) {
+            const err: any = (rpc as any).error;
+            // If RPC not found or fails, fallback to direct insert with idempotent handling
+            const { data, error } = await supabase
+                .from("likes")
+                .insert({
+                    user_id: session.user.id,
+                    post_id: postId,
+                    post_type: postType,
+                })
+                .select()
+                .single();
+            if (error) {
+                const code = (error as any)?.code;
+                if (code === '23505') {
+                    return NextResponse.json({ success: true, duplicate: true });
+                }
+                console.error("Error adding like:", error);
+                return NextResponse.json({ error: (error as any)?.message || "Failed to add like" }, { status: 500 });
+            }
+            return NextResponse.json(data);
         }
-
-        const { data, error } = await supabase
-            .from("likes")
-            .insert({
-                user_id: session.user.id,
-                post_id: postId,
-                post_type: postType,
-            })
-            .select()
-            .single();
-
-        if (error) {
-            console.error("Error adding like:", error);
-            return NextResponse.json({ error: "Failed to add like" }, { status: 500 });
-        }
-
-        return NextResponse.json(data);
+        return NextResponse.json({ success: true });
     } catch (error) {
         console.error("Error in likes POST API:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -73,18 +75,31 @@ export async function DELETE(request: NextRequest) {
             return NextResponse.json({ error: "Missing postId or postType" }, { status: 400 });
         }
 
-        const { error } = await supabase
-            .from("likes")
-            .delete()
-            .eq("user_id", session.user.id)
-            .eq("post_id", postId)
-            .eq("post_type", postType);
+        // Prefer RPC (ensures counter maintenance); fallback to direct delete
+        const rpc = await supabase.rpc("delete_like", {
+            p_post_id: postId,
+            p_post_type: postType,
+            p_user_id: session.user.id,
+        });
+        if ((rpc as any)?.error) {
+            const { data, error } = await supabase
+                .from("likes")
+                .delete()
+                .eq("user_id", session.user.id)
+                .in("post_id", [postId as any])
+                .eq("post_type", postType)
+                .select("id");
 
-        if (error) {
-            console.error("Error removing like:", error);
-            return NextResponse.json({ error: "Failed to remove like" }, { status: 500 });
+            if (error) {
+                const code = (error as any)?.code;
+                if (code === 'PGRST116') {
+                    return NextResponse.json({ success: true, notFound: true });
+                }
+                console.error("Error removing like:", error);
+                return NextResponse.json({ error: (error as any)?.message || "Failed to remove like" }, { status: 500 });
+            }
+            return NextResponse.json({ success: true, deleted: Array.isArray(data) ? data.length : undefined });
         }
-
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error("Error in likes DELETE API:", error);
@@ -128,7 +143,7 @@ export async function GET(request: NextRequest) {
                 .from("likes")
                 .select("id")
                 .eq("user_id", session.user.id)
-                .eq("post_id", postId)
+                .in("post_id", [postId as any])
                 .eq("post_type", postType)
                 .single();
 

@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { sanity } from "@/lib/sanity";
 import { ALL_TAGS, ALL_MEDIA, buildMediaQuery } from "@/lib/groq";
 import MediaCard from "@/components/MediaCard";
 import FilterSortBar, { FilterSortOptions } from "@/components/FilterSortBar";
 
 export default function MediaPage() {
+    const { data: session } = useSession();
     const [media, setMedia] = useState<any[]>([]);
     const [tags, setTags] = useState<{ name: string; slug: string }[]>([]);
     const [loading, setLoading] = useState(true);
@@ -32,7 +34,33 @@ export default function MediaPage() {
                     sanity.fetch(ALL_TAGS)
                 ]);
 
-                setMedia(mediaData || []);
+                const ids = (mediaData || []).map((m: any) => m._id);
+                let seedMap: Record<string, { count: number; liked: boolean }> = {};
+                try {
+                    if (ids.length) {
+                        const url = `/api/likes/batch?type=media&ids=${encodeURIComponent(ids.join(","))}`;
+                        const res = await fetch(url, { cache: "no-store" });
+                        if (res.ok) {
+                            const { counts, liked } = await res.json();
+                            const likeMap: Record<string, number> = {};
+                            const likedSet = new Set<string>((liked || []).map((r: any) => r.post_id));
+                            (counts || []).forEach((r: any) => {
+                                likeMap[r.post_id] = r.like_count ?? 0;
+                            });
+                            ids.forEach((id: string) => {
+                                seedMap[id] = { count: likeMap[id] ?? 0, liked: likedSet.has(id) };
+                            });
+                        }
+                    }
+                } catch { }
+
+                // attach seeds for LikeButton
+                const withSeeds = (mediaData || []).map((m: any) => ({
+                    ...m,
+                    __seed: seedMap[m._id] || { count: 0, liked: false }
+                }));
+
+                setMedia(withSeeds);
                 setTags(tagsData || []);
                 setFilterOptions(prev => ({
                     ...prev,
@@ -65,7 +93,24 @@ export default function MediaPage() {
                     tagIds: filterOptions.selectedTags,
                     sortBy: filterOptions.sortBy
                 }));
-                setMedia(mediaData || []);
+                // Re-attach seeds for filtered result
+                const ids = (mediaData || []).map((m: any) => m._id);
+                let seedMap: Record<string, { count: number; liked: boolean }> = {};
+                try {
+                    if (ids.length) {
+                        const url = `/api/likes/batch?type=media&ids=${encodeURIComponent(ids.join(","))}`;
+                        const res = await fetch(url, { cache: "no-store" });
+                        if (res.ok) {
+                            const { counts, liked } = await res.json();
+                            const likeMap: Record<string, number> = {};
+                            const likedSet = new Set<string>((liked || []).map((r: any) => r.post_id));
+                            (counts || []).forEach((r: any) => { likeMap[r.post_id] = r.like_count ?? 0; });
+                            ids.forEach((id: string) => { seedMap[id] = { count: likeMap[id] ?? 0, liked: likedSet.has(id) }; });
+                        }
+                    }
+                } catch { }
+                const withSeeds = (mediaData || []).map((m: any) => ({ ...m, __seed: seedMap[m._id] || { count: 0, liked: false } }));
+                setMedia(withSeeds);
             } catch (error) {
                 console.error("Error fetching filtered media:", error);
             } finally {
@@ -128,7 +173,7 @@ export default function MediaPage() {
                 ) : (
                     <div className="grid grid-cols-1 gap-4 place-items-center sm:gap-5 md:grid-cols-2 md:gap-6 lg:grid-cols-3 xl:grid-cols-4">
                         {media.map((mediaItem: any) => (
-                            <MediaCard key={mediaItem._id} media={mediaItem} />
+                            <MediaCard key={mediaItem._id} media={mediaItem} initialLikeCount={mediaItem.likeCount ?? undefined} initialLiked={mediaItem.initialLiked ?? false} />
                         ))}
                     </div>
                 )}

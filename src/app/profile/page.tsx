@@ -199,7 +199,7 @@ function ProfilePageInner() {
                                             coverUrl: item.post.coverUrl || undefined,
                                             videoUrl: (item.post as any).videoUrl || undefined,
                                         } as any;
-                                        return <MediaCard key={key} media={media} />;
+                                        return <MediaCard key={key} media={media} initialLikeCount={(item as any).like_count ?? undefined} />;
                                     }
                                     const review = {
                                         _id: item.post._id,
@@ -210,7 +210,7 @@ function ProfilePageInner() {
                                         coverUrl: item.post.coverUrl || undefined,
                                         blurb: undefined,
                                     } as any;
-                                    return <ReviewCard key={key} review={review} />;
+                                    return <ReviewCard key={key} review={review} initialLikeCount={(item as any).like_count ?? undefined} />;
                                 })}
                             </div>
                         )}

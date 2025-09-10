@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Fresh Press",
-  description: "A music site inspired by Stereogum and Pitchfork",
+  description: "A site for music and conversation."
 };
 
 export default function RootLayout({

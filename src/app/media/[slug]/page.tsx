@@ -9,6 +9,7 @@ import Image from "next/image";
 // Render plain iframe for YouTube links on the detail page
 import { getYouTubeId } from "@/lib/youtube";
 import LikeButton from "@/components/LikeButton";
+import { cookies } from "next/headers";
 
 interface MediaPageProps {
     params: Promise<{ slug: string }>;
@@ -51,6 +52,17 @@ export default async function MediaPage({ params, searchParams }: MediaPageProps
         playerUrl = `${playerUrl}${sep}v=${encodeURIComponent(vParam)}`;
     }
 
+    // Seed like count/liked state for first paint on detail page
+    let seed = { count: 0, liked: false } as { count: number; liked: boolean };
+    try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/likes/batch?type=media&ids=${encodeURIComponent(media._id)}`, { cache: "no-store", headers: { cookie: cookies().toString() } });
+        if (res.ok) {
+            const { counts, liked } = await res.json();
+            seed.count = counts?.[0]?.like_count ?? 0;
+            seed.liked = Array.isArray(liked) ? liked.some((r: any) => r.post_id === media._id) : false;
+        }
+    } catch { }
+
     return (
         <div className="min-h-screen bg-gray-50">
 
@@ -82,7 +94,7 @@ export default async function MediaPage({ params, searchParams }: MediaPageProps
                         <div>
                             <div className="flex items-start justify-between gap-4">
                                 <h1 className="text-4xl font-bold text-gray-900 mb-2">{media.title}</h1>
-                                <LikeButton postId={media._id} postType="media" showCount={true} />
+                                <LikeButton postId={media._id} postType="media" showCount={true} initialCount={seed.count} initialLiked={seed.liked} />
                             </div>
                             <p className="text-xl text-gray-600 mb-4">
                                 by{" "}

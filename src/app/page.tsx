@@ -3,6 +3,8 @@ import { sanity } from "@/lib/sanity";
 import { ALL_REVIEWS, ALL_MEDIA } from "@/lib/groq";
 import ReviewCard from "@/components/ReviewCard";
 import MediaCard from "@/components/MediaCard";
+import { cookies } from "next/headers";
+import { supabaseServer } from "@/lib/supabase-server";
 
 async function getRecentReviews() {
   try {
@@ -37,6 +39,32 @@ export default async function Home() {
     getRecentReviews(),
     getRecentMedia()
   ]);
+
+  // SSR seed likes in one batch per type for correct first paint
+  const reviewIds = reviews.map((r: any) => r._id);
+  const mediaIds = media.map((m: any) => m._id);
+  let reviewSeedMap: Record<string, { count: number; liked: boolean }> = {};
+  let mediaSeedMap: Record<string, { count: number; liked: boolean }> = {};
+  try {
+    const [reviewRes, mediaRes] = await Promise.all([
+      reviewIds.length ? fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/likes/batch?type=review&ids=${encodeURIComponent(reviewIds.join(','))}`, { cache: 'no-store', headers: { cookie: cookies().toString() } }) : null,
+      mediaIds.length ? fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/likes/batch?type=media&ids=${encodeURIComponent(mediaIds.join(','))}`, { cache: 'no-store', headers: { cookie: cookies().toString() } }) : null,
+    ]);
+    if (reviewRes && reviewRes.ok) {
+      const { counts, liked } = await reviewRes.json();
+      const likeMap: Record<string, number> = {};
+      const likedSet = new Set<string>((liked || []).map((r: any) => r.post_id));
+      (counts || []).forEach((r: any) => { likeMap[r.post_id] = r.like_count ?? 0; });
+      reviewIds.forEach(id => { reviewSeedMap[id] = { count: likeMap[id] ?? 0, liked: likedSet.has(id) }; });
+    }
+    if (mediaRes && mediaRes.ok) {
+      const { counts, liked } = await mediaRes.json();
+      const likeMap: Record<string, number> = {};
+      const likedSet = new Set<string>((liked || []).map((r: any) => r.post_id));
+      (counts || []).forEach((r: any) => { likeMap[r.post_id] = r.like_count ?? 0; });
+      mediaIds.forEach(id => { mediaSeedMap[id] = { count: likeMap[id] ?? 0, liked: likedSet.has(id) }; });
+    }
+  } catch { }
 
   return (
     <div className="min-h-screen bg-white">
@@ -76,7 +104,7 @@ export default async function Home() {
           ) : (
             <div className="grid grid-cols-1 gap-4 place-items-center sm:gap-5 md:grid-cols-2 md:gap-6 lg:grid-cols-3 xl:grid-cols-4">
               {reviews.slice(0, 4).map((review: any) => (
-                <ReviewCard key={review._id} review={review} />
+                <ReviewCard key={review._id} review={{ ...review, __seed: reviewSeedMap[review._id] || { count: 0, liked: false } }} />
               ))}
             </div>
           )}
@@ -109,7 +137,7 @@ export default async function Home() {
           ) : (
             <div className="grid grid-cols-1 gap-4 place-items-center sm:gap-5 md:grid-cols-2 md:gap-6 lg:grid-cols-3 xl:grid-cols-4">
               {media.slice(0, 4).map((mediaItem: any) => (
-                <MediaCard key={mediaItem._id} media={mediaItem} />
+                <MediaCard key={mediaItem._id} media={{ ...mediaItem, __seed: mediaSeedMap[mediaItem._id] || { count: 0, liked: false } }} />
               ))}
             </div>
           )}

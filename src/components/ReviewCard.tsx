@@ -60,6 +60,8 @@ export default function ReviewCard({ review }: ReviewCardProps) {
                     postType="review"
                     showCount
                     hideLabel
+                    initialLikeCount={(review as any).__seed?.count ?? 0}
+                    initialLiked={(review as any).__seed?.liked ?? false}
                 />
             </div>
         </div>

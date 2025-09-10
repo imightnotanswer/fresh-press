@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,89 +12,46 @@ interface LikeButtonProps {
     onLikeChange?: (liked: boolean) => void;
     showCount?: boolean;
     hideLabel?: boolean;
+    initialCount?: number | null;
 }
 
-export default function LikeButton({ postId, postType, initialLiked = false, onLikeChange, showCount = false, hideLabel = false }: LikeButtonProps) {
+export default function LikeButton({ postId, postType, initialLiked = false, onLikeChange, showCount = false, hideLabel = false, initialCount = null }: LikeButtonProps) {
     const { data: session } = useSession();
-    const [liked, setLiked] = useState(initialLiked);
+    const [liked, setLiked] = useState<boolean>(initialLiked);
     const [loading, setLoading] = useState(false);
-    const [count, setCount] = useState<number | null>(null);
-
-    useEffect(() => {
-        // Always fetch count for display, even if not logged in
-        if (showCount) {
-            fetchCount();
-        }
-        // Only check personal like status if signed in
-        if (session?.user?.id) {
-            checkLikeStatus();
-        } else {
-            setLiked(false);
-        }
-    }, [session, postId, postType, showCount]);
-
-    const checkLikeStatus = async () => {
-        try {
-            const response = await fetch(`/api/likes?postId=${postId}&postType=${postType}`);
-            if (response.ok) {
-                const data = await response.json();
-                setLiked(data.liked);
-            }
-        } catch (error) {
-            console.error("Error checking like status:", error);
-        }
-    };
-
-    const fetchCount = async () => {
-        try {
-            const response = await fetch(`/api/likes?postId=${postId}&postType=${postType}&count=1`);
-            if (response.ok) {
-                const data = await response.json();
-                if (typeof data.count === 'number') setCount(data.count);
-            }
-        } catch (error) {
-            console.error("Error fetching like count:", error);
-        }
-    };
+    const [count, setCount] = useState<number>(typeof initialCount === 'number' ? initialCount : 0);
 
     const handleLike = async () => {
         if (!session?.user?.id) {
-            // Redirect to sign in or show modal
-            window.location.href = "/api/auth/signin";
+            // Redirect to sign in
+            window.location.href = "/signin";
             return;
         }
 
+        // Optimistic update using seeds; do not refetch on success
         setLoading(true);
+        const prevLiked = liked;
+        const prevCount = count;
+        const nextLiked = !prevLiked;
+        setLiked(nextLiked);
+        if (showCount) setCount(prev => Math.max(0, prev + (nextLiked ? 1 : -1)));
+
         try {
-            if (liked) {
-                // Unlike
-                const response = await fetch(`/api/likes?postId=${postId}&postType=${postType}`, {
-                    method: "DELETE",
-                });
-                if (response.ok) {
-                    setLiked(false);
-                    onLikeChange?.(false);
-                    if (showCount) fetchCount();
-                }
-            } else {
-                // Like
-                const response = await fetch("/api/likes", {
+            if (nextLiked) {
+                const res = await fetch("/api/likes", {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        postId,
-                        postType,
-                    }),
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ postId, postType }),
                 });
-                if (response.ok) {
-                    setLiked(true);
-                    onLikeChange?.(true);
-                    if (showCount) fetchCount();
-                }
+                if (!res.ok) throw new Error(await res.text());
+            } else {
+                const res = await fetch(`/api/likes?postId=${postId}&postType=${postType}`, { method: "DELETE" });
+                if (!res.ok) throw new Error(await res.text());
             }
         } catch (error) {
+            // revert on failure
+            setLiked(prevLiked);
+            if (showCount) setCount(prevCount);
             console.error("Error toggling like:", error);
         } finally {
             setLoading(false);
@@ -112,12 +69,9 @@ export default function LikeButton({ postId, postType, initialLiked = false, onL
             >
                 <Heart className="h-4 w-4" />
                 {!hideLabel && <span>Like</span>}
-                {showCount && (
-                    hideLabel ? (
-                        <span className="ml-1 text-xs">{count ?? "–"}</span>
-                    ) : (
-                        <span className="ml-1 text-xs rounded-full px-2 py-0.5 bg-gray-100 text-gray-600">{count ?? "–"}</span>
-                    )
+                {showCount && (hideLabel
+                    ? <span className="ml-1 text-xs">{typeof count === 'number' ? count : 0}</span>
+                    : <span className="ml-1 text-xs rounded-full px-2 py-0.5 bg-gray-100 text-gray-600">{typeof count === 'number' ? count : 0}</span>
                 )}
             </Button>
         );
@@ -136,12 +90,9 @@ export default function LikeButton({ postId, postType, initialLiked = false, onL
         >
             <Heart className={`h-4 w-4 ${liked ? "fill-current" : ""}`} />
             {!hideLabel && <span>{liked ? "Liked" : "Like"}</span>}
-            {showCount && (
-                hideLabel ? (
-                    <span className="ml-1 text-xs">{count ?? "–"}</span>
-                ) : (
-                    <span className="ml-1 text-xs rounded-full px-2 py-0.5 bg-gray-100 text-gray-600">{count ?? "–"}</span>
-                )
+            {showCount && (hideLabel
+                ? <span className="ml-1 text-xs">{typeof count === 'number' ? count : 0}</span>
+                : <span className="ml-1 text-xs rounded-full px-2 py-0.5 bg-gray-100 text-gray-600">{typeof count === 'number' ? count : 0}</span>
             )}
         </Button>
     );

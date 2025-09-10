@@ -33,7 +33,8 @@ export const ALL_REVIEWS = `*[_type=="review"] | order(publishedAt desc){
   _id, _type, title, slug, publishedAt,
   artist->{name, slug},
   "coverUrl": cover.asset->url,
-  artistSiteUrl, blurb, body
+  artistSiteUrl, blurb, body,
+  // placeholder; like counts are hydrated by Supabase on the page using initialLikeCount
 }`;
 
 export const ALL_MEDIA = `*[_type=="media"] | order(publishedAt desc){
