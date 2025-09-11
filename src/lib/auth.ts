@@ -41,7 +41,8 @@ if (process.env.GITHUB_ID && process.env.GITHUB_SECRET) {
     );
 }
 
-if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET &&
+    !process.env.GOOGLE_CLIENT_ID.includes('your-google-client-id')) {
     providers.push(
         GoogleProvider({
             clientId: process.env.GOOGLE_CLIENT_ID,

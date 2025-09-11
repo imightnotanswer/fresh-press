@@ -6,8 +6,8 @@ const rateLimitMap = new Map<string, { count: number; resetTime: number }>()
 
 const RATE_LIMIT = {
     windowMs: 15 * 60 * 1000, // 15 minutes
-    maxRequests: 5, // 5 requests per window
-    maxRegistrations: 3, // 3 registrations per window
+    maxRequests: 20, // 20 requests per window (increased for development)
+    maxRegistrations: 5, // 5 registrations per window (increased for development)
 }
 
 function getRateLimitKey(ip: string, type: 'auth' | 'register'): string {
@@ -38,17 +38,41 @@ export function middleware(request: NextRequest) {
     const ip = request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip') ?? 'unknown'
     const pathname = request.nextUrl.pathname
 
+    // Debug endpoint to clear rate limits (development only)
+    if (pathname === '/api/debug/clear-rate-limits') {
+        rateLimitMap.clear()
+        return new NextResponse(
+            JSON.stringify({ message: 'Rate limits cleared' }), 
+            { 
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            }
+        )
+    }
+
     // Rate limit auth endpoints
     if (pathname.startsWith('/api/auth/')) {
         if (isRateLimited(ip, 'auth')) {
-            return new NextResponse('Too Many Requests', { status: 429 })
+            return new NextResponse(
+                JSON.stringify({ error: 'Too Many Requests' }),
+                {
+                    status: 429,
+                    headers: { 'Content-Type': 'application/json' }
+                }
+            )
         }
     }
 
     // Rate limit registration specifically
     if (pathname === '/api/auth/signup' || pathname === '/api/auth/register') {
         if (isRateLimited(ip, 'register')) {
-            return new NextResponse('Too Many Registration Attempts', { status: 429 })
+            return new NextResponse(
+                JSON.stringify({ error: 'Too Many Registration Attempts' }),
+                {
+                    status: 429,
+                    headers: { 'Content-Type': 'application/json' }
+                }
+            )
         }
     }
 
@@ -59,6 +83,7 @@ export const config = {
     matcher: [
         '/api/auth/:path*',
         '/api/signup/:path*',
-        '/api/register/:path*'
+        '/api/register/:path*',
+        '/api/debug/:path*'
     ]
 }
