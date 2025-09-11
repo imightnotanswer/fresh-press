@@ -35,7 +35,7 @@ function isRateLimited(ip: string, type: 'auth' | 'register'): boolean {
 }
 
 export function middleware(request: NextRequest) {
-    const ip = request.ip ?? request.headers.get('x-forwarded-for') ?? 'unknown'
+    const ip = request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip') ?? 'unknown'
     const pathname = request.nextUrl.pathname
 
     // Rate limit auth endpoints

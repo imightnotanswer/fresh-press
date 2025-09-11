@@ -88,6 +88,13 @@ export async function POST(request: NextRequest) {
         }
 
         // Check if user already exists
+        if (!supabaseAdmin) {
+            return NextResponse.json(
+                { error: 'Database not configured' },
+                { status: 503 }
+            );
+        }
+
         const { data: existingUser } = await supabaseAdmin
             .from('user_profiles')
             .select('id')
