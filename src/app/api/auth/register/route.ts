@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import { supabaseServer as supabaseAdmin } from '@/lib/supabase-server';
 
 // Simple in-memory rate limiting (use Redis in production)
@@ -52,7 +50,7 @@ async function verifyHCaptcha(token: string): Promise<boolean> {
 export async function POST(request: NextRequest) {
     try {
         // Get client IP
-        const ip = request.ip ?? request.headers.get('x-forwarded-for') ?? 'unknown';
+        const ip = request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip') ?? 'unknown';
 
         // Check rate limit
         if (isRateLimited(ip)) {
