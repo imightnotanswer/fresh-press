@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { supabaseAdmin } from '@/lib/supabase';
+import { supabaseServer as supabaseAdmin } from '@/lib/supabase-server';
 
 // Simple in-memory rate limiting (use Redis in production)
 const registrationAttempts = new Map<string, { count: number; resetTime: number }>();
@@ -36,7 +36,7 @@ async function verifyHCaptcha(token: string): Promise<boolean> {
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
             body: new URLSearchParams({
-                secret: process.env.HCAPTCHA_SECRET!,
+                secret: process.env.NEXT_PUBLIC_HCAPTCHA_SECRET!,
                 response: token,
             }),
         });
