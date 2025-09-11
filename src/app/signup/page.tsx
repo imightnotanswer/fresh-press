@@ -1,11 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
+
+declare global {
+    interface Window {
+        hcaptcha: any;
+    }
+}
 
 export default function SignUpPage() {
     const [email, setEmail] = useState("");
@@ -14,16 +20,43 @@ export default function SignUpPage() {
     const [showPw, setShowPw] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState<string | null>(null);
+    const [hcaptchaToken, setHcaptchaToken] = useState<string | null>(null);
+
+    useEffect(() => {
+        // Load hCaptcha when component mounts
+        if (typeof window !== 'undefined' && window.hcaptcha) {
+            window.hcaptcha.render('hcaptcha-container', {
+                sitekey: process.env.NEXT_PUBLIC_HCAPTCHA_SITEKEY,
+                callback: (token: string) => {
+                    setHcaptchaToken(token);
+                },
+                'expired-callback': () => {
+                    setHcaptchaToken(null);
+                },
+                'error-callback': () => {
+                    setHcaptchaToken(null);
+                }
+            });
+        }
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
         setMessage(null);
+
+        // Check if hCaptcha is completed
+        if (!hcaptchaToken) {
+            setMessage("Please complete the CAPTCHA verification");
+            setIsLoading(false);
+            return;
+        }
+
         try {
             const res = await fetch("/api/auth/register", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, password, name }),
+                body: JSON.stringify({ email, password, name, hcaptchaToken }),
             });
             const data = await res.json().catch(() => ({}));
             if (!res.ok) throw new Error(data?.error || "Registration failed");
@@ -64,7 +97,10 @@ export default function SignUpPage() {
                                     </Button>
                                 </div>
                             </div>
-                            <Button type="submit" className="w-full" disabled={isLoading}>
+                            {/* hCaptcha */}
+                            <div id="hcaptcha-container" className="flex justify-center"></div>
+                            
+                            <Button type="submit" className="w-full" disabled={isLoading || !hcaptchaToken}>
                                 {isLoading ? "Creating..." : "Create account"}
                             </Button>
                         </form>

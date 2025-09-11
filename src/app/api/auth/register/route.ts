@@ -1,92 +1,153 @@
-import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
-import { randomUUID } from "crypto";
-import { supabaseServer as supabase } from "@/lib/supabase-server";
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { supabaseAdmin } from '@/lib/supabase';
 
-export async function POST(request: NextRequest) {
+// Simple in-memory rate limiting (use Redis in production)
+const registrationAttempts = new Map<string, { count: number; resetTime: number }>();
+
+const RATE_LIMIT = {
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    maxRegistrations: 3, // 3 registrations per IP per window
+};
+
+function isRateLimited(ip: string): boolean {
+    const now = Date.now();
+    const current = registrationAttempts.get(ip);
+
+    if (!current || now > current.resetTime) {
+        registrationAttempts.set(ip, { count: 1, resetTime: now + RATE_LIMIT.windowMs });
+        return false;
+    }
+
+    if (current.count >= RATE_LIMIT.maxRegistrations) {
+        return true;
+    }
+
+    current.count++;
+    return false;
+}
+
+async function verifyHCaptcha(token: string): Promise<boolean> {
     try {
-        if (!supabase) return NextResponse.json({ error: "Database not configured" }, { status: 503 });
-        const { email, password, name } = await request.json();
-        if (!email || !password) return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+        const response = await fetch('https://hcaptcha.com/siteverify', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                secret: process.env.HCAPTCHA_SECRET!,
+                response: token,
+            }),
+        });
 
-        // Normalize
-        const normalizedEmail = String(email).toLowerCase();
-
-        // Check if user exists
-        const { data: existing } = await supabase
-            .schema("next_auth")
-            .from("users")
-            .select("id")
-            .eq("email", normalizedEmail)
-            .single();
-        if (existing) {
-            // If a user row exists but no credentials yet, allow setting credentials now
-            const { data: existingCred } = await supabase
-                .schema("next_auth")
-                .from("user_credentials")
-                .select("user_id")
-                .eq("user_id", existing.id)
-                .maybeSingle?.() as any || { data: null };
-
-            if (!existingCred) {
-                const passwordHashExisting = await bcrypt.hash(password, 12);
-                const { error: setCredErr } = await supabase
-                    .schema("next_auth")
-                    .from("user_credentials")
-                    .insert({ user_id: existing.id, password_hash: passwordHashExisting });
-                if (setCredErr) {
-                    console.error("Register: failed to set missing credentials", setCredErr);
-                    return NextResponse.json({ error: "Failed to set credentials" }, { status: 500 });
-                }
-                return NextResponse.json({ success: true, message: "Credentials set for existing user" });
-            }
-            return NextResponse.json({ error: "User already exists" }, { status: 409 });
-        }
-
-        // Create user in next_auth.users (generate id client-side to avoid missing DB defaults)
-        const newUserId = (globalThis as any).crypto?.randomUUID?.() || randomUUID();
-        const { data: user, error: createErr } = await supabase
-            .schema("next_auth")
-            .from("users")
-            .insert({ id: newUserId, email: normalizedEmail, name })
-            .select("id, email, name")
-            .single();
-        if (createErr || !user) {
-            console.error("Register: failed to create user", createErr);
-            return NextResponse.json({ error: "Failed to create user" }, { status: 500 });
-        }
-
-        // Store password hash in user_credentials
-        const passwordHash = await bcrypt.hash(password, 12);
-        const { error: credErr } = await supabase
-            .schema("next_auth")
-            .from("user_credentials")
-            .insert({ user_id: user.id, password_hash: passwordHash });
-        if (credErr) {
-            console.error("Register: failed to set credentials", credErr);
-            return NextResponse.json({ error: "Failed to set credentials" }, { status: 500 });
-        }
-
-        // Ensure public.user_profiles exists
-        try {
-            await supabase
-                .from("user_profiles")
-                .upsert({
-                    id: user.id,
-                    username: normalizedEmail.split("@")[0],
-                    display_name: name || normalizedEmail.split("@")[0],
-                    is_public: true,
-                    updated_at: new Date().toISOString(),
-                }, { onConflict: "id" });
-        } catch (e) {
-            console.warn("Register: profile upsert failed (non-fatal)", e);
-        }
-
-        return NextResponse.json({ success: true });
+        const data = await response.json();
+        return data.success === true;
     } catch (error) {
-        console.error("Error in register API:", error);
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+        console.error('hCaptcha verification failed:', error);
+        return false;
     }
 }
 
+export async function POST(request: NextRequest) {
+    try {
+        // Get client IP
+        const ip = request.ip ?? request.headers.get('x-forwarded-for') ?? 'unknown';
 
+        // Check rate limit
+        if (isRateLimited(ip)) {
+            return NextResponse.json(
+                { error: 'Too many registration attempts. Please try again later.' },
+                { status: 429 }
+            );
+        }
+
+        const { email, password, name, hcaptchaToken } = await request.json();
+
+        // Validate input
+        if (!email || !password || !hcaptchaToken) {
+            return NextResponse.json(
+                { error: 'Missing required fields' },
+                { status: 400 }
+            );
+        }
+
+        // Verify hCaptcha
+        const isCaptchaValid = await verifyHCaptcha(hcaptchaToken);
+        if (!isCaptchaValid) {
+            return NextResponse.json(
+                { error: 'CAPTCHA verification failed' },
+                { status: 400 }
+            );
+        }
+
+        // Validate password strength
+        if (password.length < 8) {
+            return NextResponse.json(
+                { error: 'Password must be at least 8 characters' },
+                { status: 400 }
+            );
+        }
+
+        // Check if user already exists
+        const { data: existingUser } = await supabaseAdmin
+            .from('user_profiles')
+            .select('id')
+            .eq('email', email)
+            .single();
+
+        if (existingUser) {
+            return NextResponse.json(
+                { error: 'User already exists' },
+                { status: 409 }
+            );
+        }
+
+        // Create user in Supabase Auth
+        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+            email,
+            password,
+            email_confirm: true, // Auto-confirm for now
+        });
+
+        if (authError) {
+            console.error('Auth creation error:', authError);
+            return NextResponse.json(
+                { error: 'Failed to create user account' },
+                { status: 500 }
+            );
+        }
+
+        // Create user profile
+        const { error: profileError } = await supabaseAdmin
+            .from('user_profiles')
+            .insert({
+                id: authData.user.id,
+                email,
+                username: name || email.split('@')[0], // Use provided name or default to email prefix
+                created_at: new Date().toISOString(),
+            });
+
+        if (profileError) {
+            console.error('Profile creation error:', profileError);
+            // Clean up auth user if profile creation fails
+            await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+            return NextResponse.json(
+                { error: 'Failed to create user profile' },
+                { status: 500 }
+            );
+        }
+
+        return NextResponse.json({
+            success: true,
+            message: 'Account created successfully'
+        });
+
+    } catch (error) {
+        console.error('Registration error:', error);
+        return NextResponse.json(
+            { error: 'Internal server error' },
+            { status: 500 }
+        );
+    }
+}
